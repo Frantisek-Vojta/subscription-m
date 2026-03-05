@@ -12,9 +12,13 @@ export default function RootLayout() {
 
         const inAuthGroup = segments[0] === '(auth)';
 
+        console.log('Auth state changed:', { user: user?.email, inAuthGroup }); // DEBUG
+
         if (!user && !inAuthGroup) {
+            console.log('Redirecting to login...'); // DEBUG
             router.replace('/(auth)/login');
         } else if (user && inAuthGroup) {
+            console.log('Redirecting to tabs...'); // DEBUG
             router.replace('/(tabs)');
         }
     }, [user, loading, segments]);
