@@ -1,10 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
-console.log('=== KONTROLA .env ===');
-console.log('API Key exists:', !!process.env.EXPO_PUBLIC_FIREBASE_API_KEY);
-console.log('All EXPO_PUBLIC_ envs:', Object.keys(process.env).filter(key => key.startsWith('EXPO_PUBLIC_')));
-
 const firebaseConfig = {
     apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -15,8 +11,6 @@ const firebaseConfig = {
     measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT
 };
 
-console.log('Firebase config completed');
-
 let app;
 let auth;
 
@@ -26,3 +20,4 @@ if (typeof window !== 'undefined') {
 }
 
 export { auth };
+

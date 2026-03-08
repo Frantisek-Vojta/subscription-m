@@ -1,25 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TextInput, Button, Alert, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
+import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
+import { configureGoogleSignIn, signInWithGoogle } from '../../config/googleAuth';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
+
+    useEffect(() => {
+        configureGoogleSignIn();
+    }, []);
 
     const handleLogin = async () => {
-        // Clear previous errors
-        setErrorMessage('');
-
-        // Validation
         if (!email || !password) {
-            setErrorMessage('Please fill in all fields');
-            return;
-        }
-
-        if (!email.includes('@') || !email.includes('.')) {
-            setErrorMessage('Please enter a valid email address');
+            Alert.alert('Error', 'Please fill in email and password');
             return;
         }
 
@@ -31,41 +27,60 @@ export default function Login() {
 
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-            // Check if email is verified
             if (!userCredential.user.emailVerified) {
-                setErrorMessage('Please verify your email before logging in');
+                Alert.alert(
+                    'Email Not Verified',
+                    'Please verify your email before logging in. Check your inbox for the verification link.'
+                );
                 await auth.signOut();
                 return;
             }
 
-            // Success
-            router.replace('/(tabs)');
-
         } catch (error: any) {
-            console.error('Login error:', error);
-
-            // Better error messages
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    setErrorMessage('No account found with this email');
-                    break;
-                case 'auth/wrong-password':
-                    setErrorMessage('Incorrect password');
-                    break;
-                case 'auth/invalid-email':
-                    setErrorMessage('Invalid email address');
-                    break;
-                case 'auth/too-many-requests':
-                    setErrorMessage('Too many failed attempts. Try again later');
-                    break;
-                case 'auth/user-disabled':
-                    setErrorMessage('This account has been disabled');
-                    break;
-                default:
-                    setErrorMessage('Login failed. Please try again');
+            if (error.code === 'auth/user-not-found') {
+                Alert.alert('Error', 'No account found with this email.');
+            } else if (error.code === 'auth/wrong-password') {
+                Alert.alert('Error', 'Incorrect password.');
+            } else if (error.code === 'auth/invalid-email') {
+                Alert.alert('Error', 'Invalid email address.');
+            } else if (error.code === 'auth/too-many-requests') {
+                Alert.alert('Error', 'Too many failed attempts. Try again later.');
+            } else {
+                Alert.alert('Error', 'Login failed: ' + error.message);
             }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        try {
+            const userCredential = await signInWithGoogle();
+            if (userCredential) {
+                console.log('Google sign in success');
+            }
+        } catch (error: any) {
+            Alert.alert('Error', 'Google sign in failed: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async () => {
+        if (!email) {
+            Alert.alert('Error', 'Please enter your email address first.');
+            return;
+        }
+
+        try {
+            const { auth } = await import('../../config/firebase');
+            const { sendPasswordResetEmail } = await import('firebase/auth');
+
+            await sendPasswordResetEmail(auth, email);
+            Alert.alert('Success', 'Password reset email sent. Check your inbox.');
+        } catch (error) {
+            Alert.alert('Error', 'Failed to send reset email.');
         }
     };
 
@@ -73,12 +88,8 @@ export default function Login() {
         <View style={styles.container}>
             <Text style={styles.title}>Welcome Back</Text>
 
-            {errorMessage ? (
-                <Text style={styles.errorText}>{errorMessage}</Text>
-            ) : null}
-
             <TextInput
-                style={[styles.input, errorMessage && !email ? styles.inputError : null]}
+                style={styles.input}
                 placeholder="Email"
                 onChangeText={setEmail}
                 value={email}
@@ -88,7 +99,7 @@ export default function Login() {
             />
 
             <TextInput
-                style={[styles.input, errorMessage && !password ? styles.inputError : null]}
+                style={styles.input}
                 placeholder="Password"
                 secureTextEntry
                 onChangeText={setPassword}
@@ -97,7 +108,7 @@ export default function Login() {
             />
 
             <Button
-                title={loading ? "Logging in..." : "Login"}
+                title={loading ? 'Logging in...' : 'Login'}
                 onPress={handleLogin}
                 disabled={loading}
             />
@@ -105,10 +116,24 @@ export default function Login() {
             <View style={styles.forgotPassword}>
                 <Button
                     title="Forgot Password?"
-                    onPress={() => Alert.alert("Info", "Password reset will be sent to your email")}
+                    onPress={handleForgotPassword}
                     disabled={loading}
                 />
             </View>
+
+            <View style={styles.orContainer}>
+                <View style={styles.line} />
+                <Text style={styles.orText}>OR</Text>
+                <View style={styles.line} />
+            </View>
+
+            <GoogleSigninButton
+                size={GoogleSigninButton.Size.Wide}
+                color={GoogleSigninButton.Color.Dark}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+                style={styles.googleButton}
+            />
 
             <View style={styles.footer}>
                 <Button
@@ -143,17 +168,27 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         fontSize: 16,
     },
-    inputError: {
-        borderColor: '#ff4444',
-    },
-    errorText: {
-        color: '#ff4444',
-        marginBottom: 15,
-        textAlign: 'center',
-        fontSize: 14,
-    },
     forgotPassword: {
         marginTop: 10,
+    },
+    orContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    line: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#ccc',
+    },
+    orText: {
+        marginHorizontal: 10,
+        color: '#666',
+        fontSize: 16,
+    },
+    googleButton: {
+        width: '100%',
+        height: 48,
     },
     footer: {
         marginTop: 30,

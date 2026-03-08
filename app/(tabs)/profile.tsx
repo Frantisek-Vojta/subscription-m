@@ -21,7 +21,7 @@ export default function Profile() {
             const { auth } = await import('../../config/firebase');
             const currentUser = auth.currentUser;
             setUser(currentUser);
-            const initialUsername = currentUser?.email?.split('@')[0] || 'User';
+            const initialUsername = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
             setUsername(initialUsername);
             setNewUsername(initialUsername);
         } catch (error) {
@@ -31,10 +31,22 @@ export default function Profile() {
         }
     };
 
-    const handleUpdateUsername = () => {
-        setUsername(newUsername);
-        setEditingUsername(false);
-        Alert.alert('Success', 'Username updated');
+    const handleUpdateUsername = async () => {
+        try {
+            const { auth } = await import('../../config/firebase');
+            const { updateProfile } = await import('firebase/auth');
+
+            if (auth.currentUser) {
+                await updateProfile(auth.currentUser, {
+                    displayName: newUsername
+                });
+                setUsername(newUsername);
+                setEditingUsername(false);
+                Alert.alert('Success', 'Username updated');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to update username');
+        }
     };
 
     const handleChangePassword = async () => {
@@ -47,13 +59,13 @@ export default function Profile() {
 
             if (user?.email) {
                 await sendPasswordResetEmail(auth, user.email);
-                setPasswordMessage('Password reset link sent to your email');
+                setPasswordMessage('✅ Password reset link sent to your email');
             } else {
                 Alert.alert('Error', 'No email address found');
             }
         } catch (error: any) {
             console.log('Password reset error:', error);
-            setPasswordMessage('Failed to send reset email');
+            setPasswordMessage('❌ Failed to send reset email');
         } finally {
             setLoading(false);
         }
@@ -156,7 +168,7 @@ export default function Profile() {
                 </TouchableOpacity>
 
                 {passwordMessage ? (
-                    <Text style={[styles.message, passwordMessage.includes('') ? styles.successMessage : styles.errorMessage]}>
+                    <Text style={[styles.message, passwordMessage.includes('✅') ? styles.successMessage : styles.errorMessage]}>
                         {passwordMessage}
                     </Text>
                 ) : null}
