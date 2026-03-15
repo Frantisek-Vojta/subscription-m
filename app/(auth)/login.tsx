@@ -1,17 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, Alert, StyleSheet, Text } from 'react-native';
+import React, { useState } from 'react';
+import {
+    View,
+    TextInput,
+    Alert,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+    ActivityIndicator,
+} from 'react-native';
 import { router } from 'expo-router';
-import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
-import { configureGoogleSignIn, signInWithGoogle } from '../../config/googleAuth';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        configureGoogleSignIn();
-    }, []);
+    const [emailFocused, setEmailFocused] = useState(false);
+    const [passwordFocused, setPasswordFocused] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -53,20 +60,6 @@ export default function Login() {
         }
     };
 
-    const handleGoogleSignIn = async () => {
-        setLoading(true);
-        try {
-            const userCredential = await signInWithGoogle();
-            if (userCredential) {
-                console.log('Google sign in success');
-            }
-        } catch (error: any) {
-            Alert.alert('Error', 'Google sign in failed: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleForgotPassword = async () => {
         if (!email) {
             Alert.alert('Error', 'Please enter your email address first.');
@@ -85,112 +78,217 @@ export default function Login() {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Welcome Back</Text>
+        <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <View style={styles.inner}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Welcome back</Text>
+                    <Text style={styles.subtitle}>Sign in to your account</Text>
+                </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                onChangeText={setEmail}
-                value={email}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                editable={!loading}
-            />
+                <View style={styles.form}>
+                    <View style={[styles.inputWrapper, emailFocused && styles.inputWrapperFocused]}>
+                        <Text style={styles.inputLabel}>Email</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="you@example.com"
+                            placeholderTextColor="#aaa"
+                            onChangeText={setEmail}
+                            value={email}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            editable={!loading}
+                            onFocus={() => setEmailFocused(true)}
+                            onBlur={() => setEmailFocused(false)}
+                        />
+                    </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                secureTextEntry
-                onChangeText={setPassword}
-                value={password}
-                editable={!loading}
-            />
+                    <View style={[styles.inputWrapper, passwordFocused && styles.inputWrapperFocused]}>
+                        <Text style={styles.inputLabel}>Password</Text>
+                        <View style={styles.passwordRow}>
+                            <TextInput
+                                style={[styles.input, { flex: 1 }]}
+                                placeholder="••••••••"
+                                placeholderTextColor="#aaa"
+                                secureTextEntry={!showPassword}
+                                onChangeText={setPassword}
+                                value={password}
+                                editable={!loading}
+                                onFocus={() => setPasswordFocused(true)}
+                                onBlur={() => setPasswordFocused(false)}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowPassword(!showPassword)}
+                                style={styles.eyeButton}
+                                disabled={loading}
+                            >
+                                <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
-            <Button
-                title={loading ? 'Logging in...' : 'Login'}
-                onPress={handleLogin}
-                disabled={loading}
-            />
+                    <TouchableOpacity
+                        onPress={handleForgotPassword}
+                        disabled={loading}
+                        style={styles.forgotWrapper}
+                    >
+                        <Text style={styles.forgotText}>Forgot password?</Text>
+                    </TouchableOpacity>
 
-            <View style={styles.forgotPassword}>
-                <Button
-                    title="Forgot Password?"
-                    onPress={handleForgotPassword}
-                    disabled={loading}
-                />
+                    <TouchableOpacity
+                        style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+                        onPress={handleLogin}
+                        disabled={loading}
+                        activeOpacity={0.85}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.loginButtonText}>Log in</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+
+                <View style={styles.registerRow}>
+                    <Text style={styles.registerText}>Don't have an account? </Text>
+                    <TouchableOpacity
+                        onPress={() => router.push('/(auth)/register')}
+                        disabled={loading}
+                    >
+                        <Text style={styles.registerLink}>Register now for free</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
-
-            <View style={styles.orContainer}>
-                <View style={styles.line} />
-                <Text style={styles.orText}>OR</Text>
-                <View style={styles.line} />
-            </View>
-
-            <GoogleSigninButton
-                size={GoogleSigninButton.Size.Wide}
-                color={GoogleSigninButton.Color.Dark}
-                onPress={handleGoogleSignIn}
-                disabled={loading}
-                style={styles.googleButton}
-            />
-
-            <View style={styles.footer}>
-                <Button
-                    title="Don't have an account? Register"
-                    onPress={() => router.push('/(auth)/register')}
-                    disabled={loading}
-                />
-            </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#f9f9f7',
+    },
+    inner: {
+        flex: 1,
         justifyContent: 'center',
-        padding: 20,
-        backgroundColor: '#fff',
+        paddingHorizontal: 28,
+    },
+    header: {
+        marginBottom: 36,
     },
     title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 30,
-        textAlign: 'center',
+        fontSize: 32,
+        fontWeight: '700',
+        color: '#111',
+        letterSpacing: -0.5,
+        marginBottom: 6,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#888',
+        fontWeight: '400',
+    },
+    form: {
+        gap: 12,
+    },
+    inputWrapper: {
+        backgroundColor: '#fff',
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor: '#e8e8e8',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    inputWrapperFocused: {
+        borderColor: '#111',
+    },
+    inputLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#999',
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+        marginBottom: 4,
     },
     input: {
-        height: 50,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        marginBottom: 15,
-        padding: 10,
-        borderRadius: 8,
         fontSize: 16,
+        color: '#111',
+        padding: 0,
     },
-    forgotPassword: {
-        marginTop: 10,
-    },
-    orContainer: {
+    passwordRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 20,
     },
-    line: {
+    eyeButton: {
+        paddingLeft: 10,
+    },
+    eyeText: {
+        fontSize: 13,
+        color: '#888',
+        fontWeight: '500',
+    },
+    forgotWrapper: {
+        alignSelf: 'flex-end',
+        marginTop: 2,
+        marginBottom: 4,
+    },
+    forgotText: {
+        fontSize: 13,
+        color: '#888',
+        fontWeight: '400',
+    },
+    loginButton: {
+        backgroundColor: '#111',
+        borderRadius: 14,
+        paddingVertical: 16,
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    loginButtonDisabled: {
+        backgroundColor: '#555',
+    },
+    loginButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+        letterSpacing: 0.2,
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 28,
+        gap: 12,
+    },
+    dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: '#ccc',
+        backgroundColor: '#e8e8e8',
     },
-    orText: {
-        marginHorizontal: 10,
-        color: '#666',
-        fontSize: 16,
+    dividerText: {
+        fontSize: 13,
+        color: '#bbb',
+        fontWeight: '500',
     },
-    googleButton: {
-        width: '100%',
-        height: 48,
+    registerRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    footer: {
-        marginTop: 30,
+    registerText: {
+        fontSize: 14,
+        color: '#888',
+    },
+    registerLink: {
+        fontSize: 14,
+        color: '#111',
+        fontWeight: '600',
     },
 });

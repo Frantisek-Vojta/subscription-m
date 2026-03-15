@@ -2,15 +2,11 @@ import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { router, useSegments } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
-import { configureGoogleSignIn } from '../config/googleAuth';
 
 export default function RootLayout() {
     const { user, loading } = useAuth();
     const segments = useSegments();
 
-    useEffect(() => {
-        configureGoogleSignIn();
-    }, []);
 
     useEffect(() => {
         if (loading) return;

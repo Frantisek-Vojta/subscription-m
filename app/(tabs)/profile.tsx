@@ -59,13 +59,13 @@ export default function Profile() {
 
             if (user?.email) {
                 await sendPasswordResetEmail(auth, user.email);
-                setPasswordMessage('✅ Password reset link sent to your email');
+                setPasswordMessage('Password reset link sent to your email');
             } else {
                 Alert.alert('Error', 'No email address found');
             }
         } catch (error: any) {
             console.log('Password reset error:', error);
-            setPasswordMessage('❌ Failed to send reset email');
+            setPasswordMessage('Failed to send reset email');
         } finally {
             setLoading(false);
         }
@@ -95,7 +95,6 @@ export default function Profile() {
             </View>
         );
     }
-
     return (
         <ScrollView style={styles.container}>
             <View style={styles.header}>
@@ -162,7 +161,7 @@ export default function Profile() {
                 <Text style={styles.sectionTitle}>Security</Text>
 
                 <TouchableOpacity style={styles.actionButton} onPress={handleChangePassword}>
-                    <FontAwesome name="key" size={20} color="#2196F3" />
+                    <FontAwesome name="key" size={20} color="#666" style={styles.icon} />
                     <Text style={styles.actionButtonText}>Change Password</Text>
                     <FontAwesome name="chevron-right" size={20} color="#666" />
                 </TouchableOpacity>
