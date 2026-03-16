@@ -25,24 +25,16 @@ export default function Login() {
             Alert.alert('Error', 'Please fill in email and password');
             return;
         }
-
         setLoading(true);
-
         try {
             const { auth } = await import('../../config/firebase');
             const { signInWithEmailAndPassword } = await import('firebase/auth');
-
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-
             if (!userCredential.user.emailVerified) {
-                Alert.alert(
-                    'Email Not Verified',
-                    'Please verify your email before logging in. Check your inbox for the verification link.'
-                );
+                Alert.alert('Email Not Verified', 'Please verify your email before logging in.');
                 await auth.signOut();
                 return;
             }
-
         } catch (error: any) {
             if (error.code === 'auth/user-not-found') {
                 Alert.alert('Error', 'No account found with this email.');
@@ -65,11 +57,9 @@ export default function Login() {
             Alert.alert('Error', 'Please enter your email address first.');
             return;
         }
-
         try {
             const { auth } = await import('../../config/firebase');
             const { sendPasswordResetEmail } = await import('firebase/auth');
-
             await sendPasswordResetEmail(auth, email);
             Alert.alert('Success', 'Password reset email sent. Check your inbox.');
         } catch (error) {
@@ -159,10 +149,7 @@ export default function Login() {
 
                 <View style={styles.registerRow}>
                     <Text style={styles.registerText}>Don't have an account? </Text>
-                    <TouchableOpacity
-                        onPress={() => router.push('/(auth)/register')}
-                        disabled={loading}
-                    >
+                    <TouchableOpacity onPress={() => router.push('/(auth)/register')} disabled={loading}>
                         <Text style={styles.registerLink}>Register now for free</Text>
                     </TouchableOpacity>
                 </View>
@@ -194,11 +181,8 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 16,
         color: '#888',
-        fontWeight: '400',
     },
-    form: {
-        gap: 12,
-    },
+    form: {},
     inputWrapper: {
         backgroundColor: '#fff',
         borderRadius: 14,
@@ -206,6 +190,7 @@ const styles = StyleSheet.create({
         borderColor: '#e8e8e8',
         paddingHorizontal: 16,
         paddingVertical: 12,
+        marginBottom: 12,
     },
     inputWrapperFocused: {
         borderColor: '#111',
@@ -237,20 +222,17 @@ const styles = StyleSheet.create({
     },
     forgotWrapper: {
         alignSelf: 'flex-end',
-        marginTop: 2,
-        marginBottom: 4,
+        marginBottom: 16,
     },
     forgotText: {
         fontSize: 13,
         color: '#888',
-        fontWeight: '400',
     },
     loginButton: {
         backgroundColor: '#111',
         borderRadius: 14,
         paddingVertical: 16,
         alignItems: 'center',
-        marginTop: 4,
     },
     loginButtonDisabled: {
         backgroundColor: '#555',
@@ -265,7 +247,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginVertical: 28,
-        gap: 12,
     },
     dividerLine: {
         flex: 1,
@@ -276,6 +257,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#bbb',
         fontWeight: '500',
+        marginHorizontal: 12,
     },
     registerRow: {
         flexDirection: 'row',

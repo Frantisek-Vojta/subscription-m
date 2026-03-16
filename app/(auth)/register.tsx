@@ -23,10 +23,10 @@ export default function Register() {
     const [verificationSent, setVerificationSent] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [passwordError, setPasswordError] = useState('');
     const [confirmPasswordError, setConfirmPasswordError] = useState('');
+    const [emailError, setEmailError] = useState('');
 
     const validatePassword = (pass: string) => {
         if (pass.length < 6) return 'At least 6 characters';
@@ -51,45 +51,29 @@ export default function Register() {
     const handleRegister = async () => {
         setPasswordError('');
         setConfirmPasswordError('');
-
+        setEmailError('');
         if (!firstName || !lastName || !email || !password || !confirmPassword) {
             Alert.alert('Error', 'Please fill in all fields');
             return;
         }
-
         const passError = validatePassword(password);
-        if (passError) {
-            setPasswordError(passError);
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            setConfirmPasswordError('Passwords do not match');
-            return;
-        }
-
+        if (passError) { setPasswordError(passError); return; }
+        if (password !== confirmPassword) { setConfirmPasswordError('Passwords do not match'); return; }
         setLoading(true);
-
         try {
             const { auth } = await import('../../config/firebase');
             const { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } = await import('firebase/auth');
-
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-
-            await updateProfile(userCredential.user, {
-                displayName: `${firstName} ${lastName}`
-            });
-
+            await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
             await sendEmailVerification(userCredential.user);
             setVerificationSent(true);
-
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
-                Alert.alert('Error', 'This email is already registered.');
+                setEmailError('This email is already registered.');
             } else if (error.code === 'auth/invalid-email') {
-                Alert.alert('Error', 'Invalid email address.');
+                setEmailError('Invalid email address.');
             } else if (error.code === 'auth/weak-password') {
-                Alert.alert('Error', 'Password is too weak.');
+                setPasswordError('Password is too weak.');
             } else {
                 Alert.alert('Error', 'Registration failed: ' + error.message);
             }
@@ -145,27 +129,20 @@ export default function Register() {
                     <Text style={styles.verifyTitle}>Check your inbox</Text>
                     <Text style={styles.verifySubtitle}>We sent a verification link to</Text>
                     <Text style={styles.verifyEmail}>{email}</Text>
-
                     <TouchableOpacity
                         style={[styles.loginButton, loading && styles.loginButtonDisabled]}
                         onPress={checkVerification}
                         disabled={loading}
                         activeOpacity={0.85}
                     >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.loginButtonText}>I've verified my email</Text>
-                        )}
+                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>I've verified my email</Text>}
                     </TouchableOpacity>
-
                     <View style={styles.resendRow}>
                         <Text style={styles.registerText}>Didn't receive it? </Text>
                         <TouchableOpacity onPress={resendVerification} disabled={loading}>
                             <Text style={styles.registerLink}>Resend</Text>
                         </TouchableOpacity>
                     </View>
-
                     <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.backButton} disabled={loading}>
                         <Text style={styles.backText}>← Back to login</Text>
                     </TouchableOpacity>
@@ -191,7 +168,7 @@ export default function Register() {
 
                 <View style={styles.form}>
                     <View style={styles.nameRow}>
-                        <View style={[styles.inputWrapper, { flex: 1 }, focusedField === 'firstName' && styles.inputWrapperFocused]}>
+                        <View style={[styles.inputWrapper, styles.nameInput, focusedField === 'firstName' && styles.inputWrapperFocused]}>
                             <Text style={styles.inputLabel}>First name</Text>
                             <TextInput
                                 style={styles.input}
@@ -204,7 +181,7 @@ export default function Register() {
                                 onBlur={() => setFocusedField(null)}
                             />
                         </View>
-                        <View style={[styles.inputWrapper, { flex: 1 }, focusedField === 'lastName' && styles.inputWrapperFocused]}>
+                        <View style={[styles.inputWrapper, styles.nameInput, focusedField === 'lastName' && styles.inputWrapperFocused]}>
                             <Text style={styles.inputLabel}>Last name</Text>
                             <TextInput
                                 style={styles.input}
@@ -219,13 +196,13 @@ export default function Register() {
                         </View>
                     </View>
 
-                    <View style={[styles.inputWrapper, focusedField === 'email' && styles.inputWrapperFocused]}>
+                    <View style={[styles.inputWrapper, focusedField === 'email' && styles.inputWrapperFocused, !!emailError && styles.inputWrapperError]}>
                         <Text style={styles.inputLabel}>Email</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="you@example.com"
                             placeholderTextColor="#aaa"
-                            onChangeText={setEmail}
+                            onChangeText={(text) => { setEmail(text); setEmailError(''); }}
                             value={email}
                             autoCapitalize="none"
                             keyboardType="email-address"
@@ -234,6 +211,7 @@ export default function Register() {
                             onBlur={() => setFocusedField(null)}
                         />
                     </View>
+                    {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
                     <View style={[styles.inputWrapper, focusedField === 'password' && styles.inputWrapperFocused, !!passwordError && styles.inputWrapperError]}>
                         <Text style={styles.inputLabel}>Password</Text>
@@ -283,11 +261,7 @@ export default function Register() {
                         disabled={loading}
                         activeOpacity={0.85}
                     >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.loginButtonText}>Create account</Text>
-                        )}
+                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Create account</Text>}
                     </TouchableOpacity>
                 </View>
 
@@ -332,14 +306,15 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 16,
         color: '#888',
-        fontWeight: '400',
     },
-    form: {
-        gap: 12,
-    },
+    form: {},
     nameRow: {
         flexDirection: 'row',
-        gap: 10,
+        marginBottom: 12,
+    },
+    nameInput: {
+        flex: 1,
+        marginBottom: 0,
     },
     inputWrapper: {
         backgroundColor: '#fff',
@@ -348,6 +323,7 @@ const styles = StyleSheet.create({
         borderColor: '#e8e8e8',
         paddingHorizontal: 16,
         paddingVertical: 12,
+        marginBottom: 12,
     },
     inputWrapperFocused: {
         borderColor: '#111',
@@ -383,7 +359,8 @@ const styles = StyleSheet.create({
     errorText: {
         color: '#ff4444',
         fontSize: 12,
-        marginTop: -6,
+        marginTop: -8,
+        marginBottom: 8,
         marginLeft: 4,
     },
     loginButton: {
@@ -406,7 +383,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginVertical: 28,
-        gap: 12,
     },
     dividerLine: {
         flex: 1,
@@ -417,6 +393,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#bbb',
         fontWeight: '500',
+        marginHorizontal: 12,
     },
     resendRow: {
         flexDirection: 'row',
@@ -437,7 +414,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 28,
-        gap: 12,
     },
     verifyIcon: {
         width: 72,
@@ -448,7 +424,7 @@ const styles = StyleSheet.create({
         borderColor: '#e8e8e8',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 8,
+        marginBottom: 16,
     },
     verifyIconText: {
         fontSize: 32,
@@ -458,20 +434,22 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#111',
         letterSpacing: -0.3,
+        marginBottom: 8,
     },
     verifySubtitle: {
         fontSize: 15,
         color: '#888',
         textAlign: 'center',
+        marginBottom: 4,
     },
     verifyEmail: {
         fontSize: 15,
         fontWeight: '600',
         color: '#111',
-        marginBottom: 8,
+        marginBottom: 24,
     },
     backButton: {
-        marginTop: 8,
+        marginTop: 16,
     },
     backText: {
         fontSize: 14,
