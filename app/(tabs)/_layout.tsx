@@ -14,11 +14,11 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="explore"
+                name="graph"
                 options={{
-                    title: 'Explore',
+                    title: 'Graph',
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="compass" size={size} color={color} />
+                        <Ionicons name="pie-chart" size={size} color={color} />
                     ),
                 }}
             />
