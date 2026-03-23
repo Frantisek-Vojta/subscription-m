@@ -20,13 +20,15 @@ Mobilní aplikace pro správu předplatných postavená na React Native (Expo) a
 ## Instalace
 
 ### 1. Klonování repozitáře
-
+```bash
 git clone https://github.com/Frantisek-Vojta/subscription-m.git
 cd subscription-m
+```
 
 ### 2. Instalace závislostí
-
+```bash
 npm install
+```
 
 ### 3. Nastavení Firebase
 
@@ -39,8 +41,8 @@ npm install
 
 ### 4. Nastavení proměnných prostředí
 
-Vytvoř soubor .env v kořenové složce projektu:
-
+Vytvoř soubor `.env` v kořenové složce projektu:
+```env
 EXPO_PUBLIC_FIREBASE_API_KEY=tvuj-api-key
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tvuj-projekt.firebaseapp.com
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=tvuj-projekt-id
@@ -48,34 +50,37 @@ EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tvuj-projekt.appspot.com
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 EXPO_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
 EXPO_PUBLIC_FIREBASE_MEASUREMENT=G-XXXXXXXXXX
+```
 
 Hodnoty najdeš ve Firebase Console → Nastavení projektu → Tvoje aplikace.
 
 ### 5. Spuštění aplikace
-
+```bash
 npx expo start
+```
 
 Po spuštění máš tyto možnosti:
-- Stiskni w pro otevření v prohlížeči
-- Stiskni a pro Android emulátor
-- Stiskni i pro iOS simulátor
+- Stiskni `w` pro otevření v prohlížeči
+- Stiskni `a` pro Android emulátor
+- Stiskni `i` pro iOS simulátor
 - Naskenuj QR kód v Expo Go na telefonu
 
 ## Firebase pravidla (Firestore)
 
 Po ukončení vývoje nahraď testovací pravidla těmito:
-
+```
 rules_version = '2';
 service cloud.firestore {
-match /databases/{database}/documents {
-match /subscriptions/{document} {
-allow read, write: if request.auth != null
-&& request.auth.uid == resource.data.userId;
-allow create: if request.auth != null
-&& request.auth.uid == request.resource.data.userId;
+  match /databases/{database}/documents {
+    match /subscriptions/{document} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+    }
+  }
 }
-}
-}
+```
 
 ## Technologie
 
@@ -88,7 +93,11 @@ allow create: if request.auth != null
 ## Vývoj
 
 Reset projektu na čistý stav:
+```bash
 npm run reset-project
+```
 
 Lint:
-npm run lint 
+```bash
+npm run lint
+```
