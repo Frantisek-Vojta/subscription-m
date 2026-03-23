@@ -39,8 +39,6 @@ type Subscription = {
     customInterval: boolean;
     startDate: string;
     nextBilling: string;
-    hasTrial: boolean;
-    trialDays: number;
     color: string;
 };
 
@@ -80,12 +78,20 @@ function calcNextBilling(startDateStr: string, intervalDays: number): string {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     start.setHours(0, 0, 0, 0);
-    if (start >= today) return startDateStr;
     let next = new Date(start);
     while (next <= today) {
         next.setDate(next.getDate() + intervalDays);
     }
     return formatDate(next);
+}
+
+function nextBillingLabel(startDateStr: string, intervalDays: number): string {
+    if (!startDateStr || intervalDays < 1) return '';
+    const next = calcNextBilling(startDateStr, intervalDays);
+    const days = daysUntil(next);
+    if (days === 0) return `Příští vyúčtování: dnes (${next})`;
+    if (days === 1) return `Příští vyúčtování: zítra (${next})`;
+    return `Příští vyúčtování: za ${days} dní (${next})`;
 }
 
 function DatePickerInline({onClose, onSelect}: {
@@ -141,13 +147,11 @@ function DatePickerInline({onClose, onSelect}: {
                     <Ionicons name="chevron-forward" size={20} color="#111"/>
                 </TouchableOpacity>
             </View>
-
             <View style={dpStyles.weekRow}>
                 {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(d => (
                     <Text key={d} style={dpStyles.weekDay}>{d}</Text>
                 ))}
             </View>
-
             <View style={dpStyles.grid}>
                 {cells.map((day, i) => (
                     <TouchableOpacity
@@ -173,7 +177,6 @@ function DatePickerInline({onClose, onSelect}: {
                     </TouchableOpacity>
                 ))}
             </View>
-
             <View style={dpStyles.footer}>
                 <TouchableOpacity style={dpStyles.cancelBtn} onPress={onClose}>
                     <Text style={dpStyles.cancelText}>Zrušit</Text>
@@ -204,13 +207,14 @@ export default function HomeScreen() {
     const [customInterval, setCustomInterval] = useState(false);
     const [customDays, setCustomDays] = useState('');
     const [startDate, setStartDate] = useState(formatDate(new Date()));
-    const [hasTrial, setHasTrial] = useState(false);
-    const [trialDays, setTrialDays] = useState('7');
+
+    const [nameError, setNameError] = useState('');
+    const [amountError, setAmountError] = useState('');
+    const [customDaysError, setCustomDaysError] = useState('');
 
     const [nameFocused, setNameFocused] = useState(false);
     const [amountFocused, setAmountFocused] = useState(false);
     const [customDaysFocused, setCustomDaysFocused] = useState(false);
-    const [trialDaysFocused, setTrialDaysFocused] = useState(false);
 
     useEffect(() => {
         const unsubscribe = auth?.onAuthStateChanged((user) => {
@@ -240,25 +244,33 @@ export default function HomeScreen() {
         }
     };
 
+    const getFinalDays = () => customInterval ? Number(customDays) : intervalDays;
+
     const handleAdd = async () => {
+        console.log('handleAdd called');
+        console.log('uid:', auth?.currentUser?.uid);
+        console.log('db:', !!db);
+        console.log('name:', name, 'amount:', amount, 'startDate:', startDate);
+        let valid = true;
+
         if (!name.trim()) {
-            Alert.alert('Chyba', 'Zadej název předplatného');
-            return;
-        }
-        if (!amount || isNaN(Number(amount))) {
-            Alert.alert('Chyba', 'Zadej platnou částku');
-            return;
-        }
-        if (!startDate.trim()) {
-            Alert.alert('Chyba', 'Vyber datum začátku');
-            return;
+            setNameError('Zadej název předplatného');
+            valid = false;
+        } else setNameError('');
+        if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+            setAmountError('Zadej platnou částku');
+            valid = false;
+        } else setAmountError('');
+
+        const finalDays = getFinalDays();
+        if (customInterval && (!customDays || isNaN(finalDays) || finalDays < 1)) {
+            setCustomDaysError('Zadej platný počet dní');
+            valid = false;
+        } else {
+            setCustomDaysError('');
         }
 
-        const finalDays = customInterval ? Number(customDays) : intervalDays;
-        if (customInterval && (!customDays || isNaN(finalDays) || finalDays < 1)) {
-            Alert.alert('Chyba', 'Zadej platný počet dní');
-            return;
-        }
+        if (!valid) return;
 
         const uid = auth?.currentUser?.uid;
         if (!uid) {
@@ -283,8 +295,6 @@ export default function HomeScreen() {
                 customInterval,
                 startDate,
                 nextBilling,
-                hasTrial,
-                trialDays: hasTrial ? Number(trialDays) : 0,
                 color,
                 createdAt: new Date().toISOString(),
             };
@@ -325,14 +335,15 @@ export default function HomeScreen() {
         setCustomInterval(false);
         setCustomDays('');
         setStartDate(formatDate(new Date()));
-        setHasTrial(false);
-        setTrialDays('7');
+        setNameError('');
+        setAmountError('');
+        setCustomDaysError('');
         setDatePickerVisible(false);
     };
 
-    const totalMonthly = subscriptions.reduce((sum, s) => {
-        return sum + (s.amount / s.intervalDays) * 30;
-    }, 0);
+    const totalMonthly = subscriptions.reduce((sum, s) => sum + (s.amount / s.intervalDays) * 30, 0);
+
+    const previewLabel = nextBillingLabel(startDate, getFinalDays());
 
     if (loading) {
         return (
@@ -371,7 +382,6 @@ export default function HomeScreen() {
                 ) : (
                     subscriptions.map((sub) => {
                         const days = daysUntil(sub.nextBilling);
-                        const isTrialActive = sub.hasTrial && days > 0 && days <= sub.trialDays;
                         return (
                             <TouchableOpacity
                                 key={sub.id}
@@ -381,14 +391,7 @@ export default function HomeScreen() {
                             >
                                 <View style={[styles.subColorBar, {backgroundColor: sub.color}]}/>
                                 <View style={styles.subInfo}>
-                                    <View style={styles.subNameRow}>
-                                        <Text style={styles.subName}>{sub.name}</Text>
-                                        {isTrialActive && (
-                                            <View style={styles.trialBadge}>
-                                                <Text style={styles.trialBadgeText}>Trial</Text>
-                                            </View>
-                                        )}
-                                    </View>
+                                    <Text style={styles.subName}>{sub.name}</Text>
                                     <Text style={styles.subCycle}>{daysToLabel(sub.intervalDays)}</Text>
                                     <Text style={styles.subNext}>
                                         {days < 0
@@ -442,29 +445,38 @@ export default function HomeScreen() {
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
                             <Text style={styles.fieldLabel}>Název</Text>
-                            <View style={[styles.inputWrapper, nameFocused && styles.inputFocused]}>
+                            <View
+                                style={[styles.inputWrapper, nameFocused && styles.inputFocused, !!nameError && styles.inputError]}>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Netflix, Spotify..."
                                     placeholderTextColor="#aaa"
                                     value={name}
-                                    onChangeText={setName}
+                                    onChangeText={(t) => {
+                                        setName(t);
+                                        if (t.trim()) setNameError('');
+                                    }}
                                     onFocus={() => setNameFocused(true)}
                                     onBlur={() => setNameFocused(false)}
                                 />
                             </View>
+                            {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
                             <Text style={styles.fieldLabel}>Částka</Text>
                             <View style={styles.amountRow}>
                                 <View
-                                    style={[styles.inputWrapper, styles.amountInput, amountFocused && styles.inputFocused]}>
+                                    style={[styles.inputWrapper, styles.amountInput, amountFocused && styles.inputFocused, !!amountError && styles.inputError]}>
                                     <TextInput
                                         style={styles.input}
                                         placeholder="0"
                                         placeholderTextColor="#aaa"
                                         value={amount}
-                                        onChangeText={setAmount}
+                                        onChangeText={(t) => {
+                                            setAmount(t);
+                                            if (t && !isNaN(Number(t))) setAmountError('');
+                                        }}
                                         keyboardType="numeric"
                                         onFocus={() => setAmountFocused(true)}
                                         onBlur={() => setAmountFocused(false)}
@@ -483,6 +495,7 @@ export default function HomeScreen() {
                                     ))}
                                 </View>
                             </View>
+                            {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
 
                             <Text style={styles.fieldLabel}>Frekvence platby</Text>
                             <View style={styles.presetRow}>
@@ -493,6 +506,7 @@ export default function HomeScreen() {
                                         onPress={() => {
                                             setIntervalDays(b.value);
                                             setCustomInterval(false);
+                                            setCustomDaysError('');
                                         }}
                                     >
                                         <Text
@@ -509,24 +523,28 @@ export default function HomeScreen() {
                             </View>
 
                             {customInterval && (
-                                <View
-                                    style={[styles.inputWrapper, {marginTop: 8}, customDaysFocused && styles.inputFocused]}>
-                                    <View style={styles.inputWithSuffix}>
-                                        <TextInput
-                                            style={[styles.input, {flex: 1}]}
-                                            placeholder="Počet dní (např. 3)"
-                                            placeholderTextColor="#aaa"
-                                            value={customDays}
-                                            onChangeText={setCustomDays}
-                                            keyboardType="numeric"
-                                            onFocus={() => setCustomDaysFocused(true)}
-                                            onBlur={() => setCustomDaysFocused(false)}
-                                        />
-                                        {customDays.length > 0 && (
-                                            <Text style={styles.inputSuffix}>dní</Text>
-                                        )}
+                                <>
+                                    <View
+                                        style={[styles.inputWrapper, {marginTop: 8}, customDaysFocused && styles.inputFocused, !!customDaysError && styles.inputError]}>
+                                        <View style={styles.inputWithSuffix}>
+                                            <TextInput
+                                                style={[styles.input, {flex: 1}]}
+                                                placeholder="Počet dní (např. 3)"
+                                                placeholderTextColor="#aaa"
+                                                value={customDays}
+                                                onChangeText={(t) => {
+                                                    setCustomDays(t);
+                                                    if (t && Number(t) > 0) setCustomDaysError('');
+                                                }}
+                                                keyboardType="numeric"
+                                                onFocus={() => setCustomDaysFocused(true)}
+                                                onBlur={() => setCustomDaysFocused(false)}
+                                            />
+                                            {customDays.length > 0 && <Text style={styles.inputSuffix}>dní</Text>}
+                                        </View>
                                     </View>
-                                </View>
+                                    {customDaysError ? <Text style={styles.errorText}>{customDaysError}</Text> : null}
+                                </>
                             )}
 
                             <Text style={styles.fieldLabel}>Datum začátku</Text>
@@ -536,46 +554,9 @@ export default function HomeScreen() {
                                 activeOpacity={0.7}
                             >
                                 <Ionicons name="calendar-outline" size={18} color="#888" style={{marginRight: 10}}/>
-                                <Text style={[styles.datePickerText, styles.datePickerTextSelected]}>
-                                    {startDate}
-                                </Text>
+                                <Text style={[styles.datePickerText, styles.datePickerTextSelected]}>{startDate}</Text>
                             </TouchableOpacity>
-                            <Text style={styles.dateHint}>
-                                Příští
-                                vyúčtování: {calcNextBilling(startDate, customInterval ? (Number(customDays) || intervalDays) : intervalDays)}
-                            </Text>
-
-                            <Text style={styles.fieldLabel}>Zkušební období</Text>
-                            <TouchableOpacity
-                                style={[styles.toggleRow, hasTrial && styles.toggleRowActive]}
-                                onPress={() => setHasTrial(!hasTrial)}
-                            >
-                                <Text style={[styles.toggleText, hasTrial && styles.toggleTextActive]}>
-                                    {hasTrial ? 'Ano, má zkušební období' : 'Ne, bez zkušebního období'}
-                                </Text>
-                                <View style={[styles.toggleDot, hasTrial && styles.toggleDotActive]}/>
-                            </TouchableOpacity>
-
-                            {hasTrial && (
-                                <View
-                                    style={[styles.inputWrapper, {marginTop: 8}, trialDaysFocused && styles.inputFocused]}>
-                                    <View style={styles.inputWithSuffix}>
-                                        <TextInput
-                                            style={[styles.input, {flex: 1}]}
-                                            placeholder="Délka trial (např. 7)"
-                                            placeholderTextColor="#aaa"
-                                            value={trialDays}
-                                            onChangeText={setTrialDays}
-                                            keyboardType="numeric"
-                                            onFocus={() => setTrialDaysFocused(true)}
-                                            onBlur={() => setTrialDaysFocused(false)}
-                                        />
-                                        {trialDays.length > 0 && (
-                                            <Text style={styles.inputSuffix}>dní</Text>
-                                        )}
-                                    </View>
-                                </View>
-                            )}
+                            {previewLabel ? <Text style={styles.dateHint}>{previewLabel}</Text> : null}
 
                             <TouchableOpacity
                                 style={[styles.saveButton, saving && styles.saveButtonDisabled]}
@@ -628,17 +609,7 @@ const styles = StyleSheet.create({
     },
     subColorBar: {width: 5, alignSelf: 'stretch'},
     subInfo: {flex: 1, padding: 16},
-    subNameRow: {flexDirection: 'row', alignItems: 'center', marginBottom: 3},
-    subName: {fontSize: 16, fontWeight: '600', color: '#111', marginRight: 8},
-    trialBadge: {
-        backgroundColor: '#f0fdf4',
-        borderRadius: 6,
-        paddingHorizontal: 7,
-        paddingVertical: 2,
-        borderWidth: 1,
-        borderColor: '#bbf7d0'
-    },
-    trialBadgeText: {fontSize: 11, color: '#16a34a', fontWeight: '600'},
+    subName: {fontSize: 16, fontWeight: '600', color: '#111', marginBottom: 3},
     subCycle: {fontSize: 13, color: '#888', marginBottom: 2},
     subNext: {fontSize: 12, color: '#bbb'},
     subAmountContainer: {alignItems: 'flex-end', paddingRight: 16},
@@ -687,6 +658,8 @@ const styles = StyleSheet.create({
         paddingVertical: 14
     },
     inputFocused: {borderColor: '#111'},
+    inputError: {borderColor: '#ff4444'},
+    errorText: {color: '#ff4444', fontSize: 12, marginTop: 4, marginBottom: 4, marginLeft: 4},
     input: {fontSize: 16, color: '#111', padding: 0},
     inputWithSuffix: {flexDirection: 'row', alignItems: 'center'},
     inputSuffix: {fontSize: 14, color: '#aaa', marginLeft: 8},
@@ -716,22 +689,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center', alignItems: 'center', padding: 24, zIndex: 999,
     },
-    toggleRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 14,
-        borderWidth: 1.5,
-        borderColor: '#e8e8e8',
-        paddingHorizontal: 16,
-        paddingVertical: 14
-    },
-    toggleRowActive: {borderColor: '#111'},
-    toggleText: {fontSize: 15, color: '#888'},
-    toggleTextActive: {color: '#111', fontWeight: '500'},
-    toggleDot: {width: 20, height: 20, borderRadius: 10, backgroundColor: '#e8e8e8'},
-    toggleDotActive: {backgroundColor: '#111'},
     saveButton: {backgroundColor: '#111', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 24},
     saveButtonDisabled: {backgroundColor: '#555'},
     saveButtonText: {color: '#fff', fontSize: 16, fontWeight: '600'},
