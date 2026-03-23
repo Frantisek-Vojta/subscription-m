@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
     View,
     TextInput,
@@ -10,7 +10,9 @@ import {
     Platform,
     ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import {router} from 'expo-router';
+import {signInWithEmailAndPassword, sendPasswordResetEmail} from 'firebase/auth';
+import {auth} from '../../config/firebase';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -25,10 +27,12 @@ export default function Login() {
             Alert.alert('Error', 'Please fill in email and password');
             return;
         }
+        if (!auth) {
+            Alert.alert('Error', 'Auth not available');
+            return;
+        }
         setLoading(true);
         try {
-            const { auth } = await import('../../config/firebase');
-            const { signInWithEmailAndPassword } = await import('firebase/auth');
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             if (!userCredential.user.emailVerified) {
                 Alert.alert('Email Not Verified', 'Please verify your email before logging in.');
@@ -57,9 +61,8 @@ export default function Login() {
             Alert.alert('Error', 'Please enter your email address first.');
             return;
         }
+        if (!auth) return;
         try {
-            const { auth } = await import('../../config/firebase');
-            const { sendPasswordResetEmail } = await import('firebase/auth');
             await sendPasswordResetEmail(auth, email);
             Alert.alert('Success', 'Password reset email sent. Check your inbox.');
         } catch (error) {
@@ -99,7 +102,7 @@ export default function Login() {
                         <Text style={styles.inputLabel}>Password</Text>
                         <View style={styles.passwordRow}>
                             <TextInput
-                                style={[styles.input, { flex: 1 }]}
+                                style={[styles.input, {flex: 1}]}
                                 placeholder="••••••••"
                                 placeholderTextColor="#aaa"
                                 secureTextEntry={!showPassword}
@@ -134,7 +137,7 @@ export default function Login() {
                         activeOpacity={0.85}
                     >
                         {loading ? (
-                            <ActivityIndicator color="#fff" />
+                            <ActivityIndicator color="#fff"/>
                         ) : (
                             <Text style={styles.loginButtonText}>Log in</Text>
                         )}
@@ -142,9 +145,9 @@ export default function Login() {
                 </View>
 
                 <View style={styles.divider}>
-                    <View style={styles.dividerLine} />
+                    <View style={styles.dividerLine}/>
                     <Text style={styles.dividerText}>or</Text>
-                    <View style={styles.dividerLine} />
+                    <View style={styles.dividerLine}/>
                 </View>
 
                 <View style={styles.registerRow}>
@@ -159,29 +162,11 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f9f9f7',
-    },
-    inner: {
-        flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 28,
-    },
-    header: {
-        marginBottom: 36,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: '700',
-        color: '#111',
-        letterSpacing: -0.5,
-        marginBottom: 6,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#888',
-    },
+    container: {flex: 1, backgroundColor: '#f9f9f7'},
+    inner: {flex: 1, justifyContent: 'center', paddingHorizontal: 28},
+    header: {marginBottom: 36},
+    title: {fontSize: 32, fontWeight: '700', color: '#111', letterSpacing: -0.5, marginBottom: 6},
+    subtitle: {fontSize: 16, color: '#888'},
     form: {},
     inputWrapper: {
         backgroundColor: '#fff',
@@ -190,87 +175,31 @@ const styles = StyleSheet.create({
         borderColor: '#e8e8e8',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        marginBottom: 12,
+        marginBottom: 12
     },
-    inputWrapperFocused: {
-        borderColor: '#111',
-    },
+    inputWrapperFocused: {borderColor: '#111'},
     inputLabel: {
         fontSize: 11,
         fontWeight: '600',
         color: '#999',
         letterSpacing: 0.5,
         textTransform: 'uppercase',
-        marginBottom: 4,
+        marginBottom: 4
     },
-    input: {
-        fontSize: 16,
-        color: '#111',
-        padding: 0,
-    },
-    passwordRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    eyeButton: {
-        paddingLeft: 10,
-    },
-    eyeText: {
-        fontSize: 13,
-        color: '#888',
-        fontWeight: '500',
-    },
-    forgotWrapper: {
-        alignSelf: 'flex-end',
-        marginBottom: 16,
-    },
-    forgotText: {
-        fontSize: 13,
-        color: '#888',
-    },
-    loginButton: {
-        backgroundColor: '#111',
-        borderRadius: 14,
-        paddingVertical: 16,
-        alignItems: 'center',
-    },
-    loginButtonDisabled: {
-        backgroundColor: '#555',
-    },
-    loginButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-        letterSpacing: 0.2,
-    },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 28,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#e8e8e8',
-    },
-    dividerText: {
-        fontSize: 13,
-        color: '#bbb',
-        fontWeight: '500',
-        marginHorizontal: 12,
-    },
-    registerRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    registerText: {
-        fontSize: 14,
-        color: '#888',
-    },
-    registerLink: {
-        fontSize: 14,
-        color: '#111',
-        fontWeight: '600',
-    },
+    input: {fontSize: 16, color: '#111', padding: 0},
+    passwordRow: {flexDirection: 'row', alignItems: 'center'},
+    eyeButton: {paddingLeft: 10},
+    eyeText: {fontSize: 13, color: '#888', fontWeight: '500'},
+    forgotWrapper: {alignSelf: 'flex-end', marginBottom: 16},
+    forgotText: {fontSize: 13, color: '#888'},
+    loginButton: {backgroundColor: '#111', borderRadius: 14, paddingVertical: 16, alignItems: 'center'},
+    loginButtonDisabled: {backgroundColor: '#555'},
+    loginButtonText: {color: '#fff', fontSize: 16, fontWeight: '600', letterSpacing: 0.2},
+    divider: {flexDirection: 'row', alignItems: 'center', marginVertical: 28},
+    dividerLine: {flex: 1, height: 1, backgroundColor: '#e8e8e8'},
+    dividerText: {fontSize: 13, color: '#bbb', fontWeight: '500', marginHorizontal: 12},
+    registerRow: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center'},
+    registerText: {fontSize: 14, color: '#888'},
+    registerLink: {fontSize: 14, color: '#111', fontWeight: '600'},
+
 });

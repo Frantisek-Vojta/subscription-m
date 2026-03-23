@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { router } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
-import { User } from 'firebase/auth';
+import React, {useState, useEffect} from 'react';
+import {View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity, Image} from 'react-native';
+import {router} from 'expo-router';
+import {FontAwesome} from '@expo/vector-icons';
+import {User, updateProfile, sendPasswordResetEmail, signOut} from 'firebase/auth';
+import {auth} from '../../config/firebase';
 
 export default function Profile() {
     const [user, setUser] = useState<User | null>(null);
@@ -13,33 +14,18 @@ export default function Profile() {
     const [passwordMessage, setPasswordMessage] = useState('');
 
     useEffect(() => {
-        loadUser();
+        const currentUser = auth?.currentUser ?? null;
+        setUser(currentUser);
+        const initialUsername = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
+        setUsername(initialUsername);
+        setNewUsername(initialUsername);
+        setLoading(false);
     }, []);
-
-    const loadUser = async () => {
-        try {
-            const { auth } = await import('../../config/firebase');
-            const currentUser = auth.currentUser;
-            setUser(currentUser);
-            const initialUsername = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
-            setUsername(initialUsername);
-            setNewUsername(initialUsername);
-        } catch (error) {
-            console.log('Load user error:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleUpdateUsername = async () => {
         try {
-            const { auth } = await import('../../config/firebase');
-            const { updateProfile } = await import('firebase/auth');
-
-            if (auth.currentUser) {
-                await updateProfile(auth.currentUser, {
-                    displayName: newUsername
-                });
+            if (auth?.currentUser) {
+                await updateProfile(auth.currentUser, {displayName: newUsername});
                 setUsername(newUsername);
                 setEditingUsername(false);
                 Alert.alert('Success', 'Username updated');
@@ -53,18 +39,13 @@ export default function Profile() {
         try {
             setLoading(true);
             setPasswordMessage('');
-
-            const { auth } = await import('../../config/firebase');
-            const { sendPasswordResetEmail } = await import('firebase/auth');
-
-            if (user?.email) {
+            if (user?.email && auth) {
                 await sendPasswordResetEmail(auth, user.email);
                 setPasswordMessage('Password reset link sent to your email');
             } else {
                 Alert.alert('Error', 'No email address found');
             }
         } catch (error: any) {
-            console.log('Password reset error:', error);
             setPasswordMessage('Failed to send reset email');
         } finally {
             setLoading(false);
@@ -74,15 +55,9 @@ export default function Profile() {
     const handleLogout = async () => {
         try {
             setLoading(true);
-
-            const { auth } = await import('../../config/firebase');
-            const { signOut } = await import('firebase/auth');
-
-            await signOut(auth);
+            if (auth) await signOut(auth);
             router.replace('/(auth)/login');
-
         } catch (error: any) {
-            console.log('Logout error:', error);
             Alert.alert('Error', error.message || 'Failed to logout');
             setLoading(false);
         }
@@ -95,14 +70,15 @@ export default function Profile() {
             </View>
         );
     }
+
     return (
         <ScrollView style={styles.container}>
             <View style={styles.header}>
                 <View style={styles.avatarContainer}>
                     {user?.photoURL ? (
-                        <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+                        <Image source={{uri: user.photoURL}} style={styles.avatar}/>
                     ) : (
-                        <FontAwesome name="user-circle" size={100} color="#666" />
+                        <FontAwesome name="user-circle" size={100} color="#666"/>
                     )}
                 </View>
 
@@ -116,10 +92,10 @@ export default function Profile() {
                         />
                         <View style={styles.usernameEditButtons}>
                             <TouchableOpacity onPress={() => setEditingUsername(false)}>
-                                <FontAwesome name="times" size={24} color="#ff4444" />
+                                <FontAwesome name="times" size={24} color="#ff4444"/>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={handleUpdateUsername}>
-                                <FontAwesome name="check" size={24} color="#00C851" />
+                                <FontAwesome name="check" size={24} color="#00C851"/>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -127,7 +103,7 @@ export default function Profile() {
                     <View style={styles.usernameContainer}>
                         <Text style={styles.username}>{username}</Text>
                         <TouchableOpacity onPress={() => setEditingUsername(true)}>
-                            <FontAwesome name="pencil" size={20} color="#2196F3" />
+                            <FontAwesome name="pencil" size={20} color="#2196F3"/>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -137,19 +113,19 @@ export default function Profile() {
                 <Text style={styles.sectionTitle}>Account Information</Text>
 
                 <View style={styles.infoRow}>
-                    <FontAwesome name="envelope" size={20} color="#666" style={styles.icon} />
+                    <FontAwesome name="envelope" size={20} color="#666" style={styles.icon}/>
                     <Text style={styles.label}>Email</Text>
                     <Text style={styles.value}>{user?.email}</Text>
                 </View>
 
                 <View style={styles.infoRow}>
-                    <FontAwesome name="lock" size={20} color="#666" style={styles.icon} />
+                    <FontAwesome name="lock" size={20} color="#666" style={styles.icon}/>
                     <Text style={styles.label}>Password</Text>
                     <Text style={styles.value}>••••••••</Text>
                 </View>
 
                 <View style={styles.infoRow}>
-                    <FontAwesome name="check-circle" size={20} color="#666" style={styles.icon} />
+                    <FontAwesome name="check-circle" size={20} color="#666" style={styles.icon}/>
                     <Text style={styles.label}>Verified</Text>
                     <Text style={[styles.value, user?.emailVerified ? styles.verified : styles.notVerified]}>
                         {user?.emailVerified ? 'Yes' : 'No'}
@@ -161,20 +137,21 @@ export default function Profile() {
                 <Text style={styles.sectionTitle}>Security</Text>
 
                 <TouchableOpacity style={styles.actionButton} onPress={handleChangePassword}>
-                    <FontAwesome name="key" size={20} color="#666" style={styles.icon} />
+                    <FontAwesome name="key" size={20} color="#666" style={styles.icon}/>
                     <Text style={styles.actionButtonText}>Change Password</Text>
-                    <FontAwesome name="chevron-right" size={20} color="#666" />
+                    <FontAwesome name="chevron-right" size={20} color="#666"/>
                 </TouchableOpacity>
 
                 {passwordMessage ? (
-                    <Text style={[styles.message, passwordMessage.includes('✅') ? styles.successMessage : styles.errorMessage]}>
+                    <Text
+                        style={[styles.message, passwordMessage.includes('sent') ? styles.successMessage : styles.errorMessage]}>
                         {passwordMessage}
                     </Text>
                 ) : null}
             </View>
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <FontAwesome name="sign-out" size={20} color="#ff4444" />
+                <FontAwesome name="sign-out" size={20} color="#ff4444"/>
                 <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
         </ScrollView>
@@ -182,35 +159,13 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    header: {
-        alignItems: 'center',
-        padding: 30,
-        backgroundColor: '#f8f9fa',
-    },
-    avatarContainer: {
-        marginBottom: 15,
-    },
-    avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-    },
-    usernameContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    username: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginRight: 10,
-    },
-    usernameEditContainer: {
-        alignItems: 'center',
-    },
+    container: {flex: 1, backgroundColor: '#fff'},
+    header: {alignItems: 'center', padding: 30, backgroundColor: '#f8f9fa'},
+    avatarContainer: {marginBottom: 15},
+    avatar: {width: 100, height: 100, borderRadius: 50},
+    usernameContainer: {flexDirection: 'row', alignItems: 'center'},
+    username: {fontSize: 24, fontWeight: 'bold', marginRight: 10},
+    usernameEditContainer: {alignItems: 'center'},
     usernameInput: {
         fontSize: 20,
         borderWidth: 1,
@@ -219,87 +174,35 @@ const styles = StyleSheet.create({
         padding: 10,
         width: 200,
         textAlign: 'center',
-        marginBottom: 10,
+        marginBottom: 10
     },
-    usernameEditButtons: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 20,
-    },
-    section: {
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 15,
-        color: '#333',
-    },
-    infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 15,
-        paddingVertical: 5,
-    },
-    icon: {
-        width: 30,
-    },
-    label: {
-        fontSize: 16,
-        color: '#666',
-        width: 80,
-    },
-    value: {
-        fontSize: 16,
-        flex: 1,
-    },
-    verified: {
-        color: '#00C851',
-    },
-    notVerified: {
-        color: '#ff4444',
-    },
+    usernameEditButtons: {flexDirection: 'row', justifyContent: 'center', gap: 20},
+    section: {padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee'},
+    sectionTitle: {fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: '#333'},
+    infoRow: {flexDirection: 'row', alignItems: 'center', marginBottom: 15, paddingVertical: 5},
+    icon: {width: 30},
+    label: {fontSize: 16, color: '#666', width: 80},
+    value: {fontSize: 16, flex: 1},
+    verified: {color: '#00C851'},
+    notVerified: {color: '#ff4444'},
     actionButton: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 15,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#eee'
     },
-    actionButtonText: {
-        fontSize: 16,
-        flex: 1,
-        marginLeft: 15,
-    },
-    message: {
-        fontSize: 14,
-        textAlign: 'center',
-        padding: 10,
-        marginTop: 10,
-        borderRadius: 5,
-    },
-    successMessage: {
-        backgroundColor: '#d4edda',
-        color: '#155724',
-    },
-    errorMessage: {
-        backgroundColor: '#f8d7da',
-        color: '#721c24',
-    },
+    actionButtonText: {fontSize: 16, flex: 1, marginLeft: 15},
+    message: {fontSize: 14, textAlign: 'center', padding: 10, marginTop: 10, borderRadius: 5},
+    successMessage: {backgroundColor: '#d4edda', color: '#155724'},
+    errorMessage: {backgroundColor: '#f8d7da', color: '#721c24'},
     logoutButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 20,
         marginTop: 20,
-        marginBottom: 30,
+        marginBottom: 30
     },
-    logoutText: {
-        fontSize: 18,
-        color: '#ff4444',
-        marginLeft: 10,
-        fontWeight: 'bold',
-    },
+    logoutText: {fontSize: 18, color: '#ff4444', marginLeft: 10, fontWeight: 'bold'},
 });
