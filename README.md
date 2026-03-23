@@ -1,50 +1,94 @@
-# Welcome to your Expo app 👋
+# Subscription Manager
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Mobilní aplikace pro správu předplatných postavená na React Native (Expo) a Firebase.
 
-## Get started
+## Funkce
 
-1. Install dependencies
+- Přihlášení a registrace přes email
+- Přidávání předplatných s názvem, částkou, měnou a frekvencí platby
+- Automatický výpočet příštího vyúčtování
+- Vlastní frekvence platby (např. každé 3 dny)
+- Přehled měsíčních výdajů
+- Data uložena v Firebase Firestore – každý uživatel vidí jen svá předplatná
 
-   ```bash
-   npm install
-   ```
+## Požadavky
 
-2. Start the app
+- Node.js verze 18 nebo novější (https://nodejs.org/)
+- Účet na Firebase (https://firebase.google.com/)
+- Android emulátor, iOS simulátor nebo telefon s Expo Go (https://expo.dev/go)
 
-   ```bash
-   npx expo start
-   ```
+## Instalace
 
-In the output, you'll find options to open the app in a
+### 1. Klonování repozitáře
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+git clone https://github.com/Frantisek-Vojta/subscription-m.git
+cd subscription-m
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 2. Instalace závislostí
 
-## Get a fresh project
+npm install
 
-When you're ready, run:
+### 3. Nastavení Firebase
 
-```bash
+1. Jdi na console.firebase.google.com
+2. Vytvoř nový projekt
+3. Přidej webovou aplikaci (ikona </>)
+4. Zkopíruj konfiguraci Firebase
+5. V projektu zapni Authentication → Email/Password
+6. Vytvoř Firestore Database → Start in test mode → region europe-west
+
+### 4. Nastavení proměnných prostředí
+
+Vytvoř soubor .env v kořenové složce projektu:
+
+EXPO_PUBLIC_FIREBASE_API_KEY=tvuj-api-key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tvuj-projekt.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=tvuj-projekt-id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tvuj-projekt.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+EXPO_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
+EXPO_PUBLIC_FIREBASE_MEASUREMENT=G-XXXXXXXXXX
+
+Hodnoty najdeš ve Firebase Console → Nastavení projektu → Tvoje aplikace.
+
+### 5. Spuštění aplikace
+
+npx expo start
+
+Po spuštění máš tyto možnosti:
+- Stiskni w pro otevření v prohlížeči
+- Stiskni a pro Android emulátor
+- Stiskni i pro iOS simulátor
+- Naskenuj QR kód v Expo Go na telefonu
+
+## Firebase pravidla (Firestore)
+
+Po ukončení vývoje nahraď testovací pravidla těmito:
+
+rules_version = '2';
+service cloud.firestore {
+match /databases/{database}/documents {
+match /subscriptions/{document} {
+allow read, write: if request.auth != null
+&& request.auth.uid == resource.data.userId;
+allow create: if request.auth != null
+&& request.auth.uid == request.resource.data.userId;
+}
+}
+}
+
+## Technologie
+
+- Expo ~54
+- React Native 0.81
+- Expo Router ~6
+- Firebase ^12 (Auth + Firestore)
+- TypeScript
+
+## Vývoj
+
+Reset projektu na čistý stav:
 npm run reset-project
-```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Lint:
+npm run lint
