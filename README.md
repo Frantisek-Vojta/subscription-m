@@ -91,4 +91,4 @@ Reset projektu na čistý stav:
 npm run reset-project
 
 Lint:
-npm run lint
+npm run lint 
