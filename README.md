@@ -69,17 +69,7 @@ Po spuštění máš tyto možnosti:
 
 Po ukončení vývoje nahraď testovací pravidla těmito:
 ```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /subscriptions/{document} {
-      allow read, write: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-    }
-  }
-}
+
 ```
 
 ## Technologie

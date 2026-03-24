@@ -17,10 +17,10 @@ import {db, auth} from '../../config/firebase';
 const CURRENCIES = ['CZK', 'EUR', 'USD', 'GBP'];
 
 const BILLING_PRESETS = [
-    {label: 'Týdně', value: 7},
-    {label: '2 týdny', value: 14},
-    {label: 'Měsíčně', value: 30},
-    {label: 'Ročně', value: 365},
+    {label: 'Weekly', value: 7},
+    {label: '2 weeks', value: 14},
+    {label: 'Monthly', value: 30},
+    {label: 'Yearly', value: 365},
 ];
 
 const SUB_COLORS = [
@@ -28,7 +28,7 @@ const SUB_COLORS = [
     '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6',
 ];
 
-const MONTHS = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 type Subscription = {
     id: string;
@@ -43,11 +43,11 @@ type Subscription = {
 };
 
 function daysToLabel(days: number): string {
-    if (days === 7) return 'Týdně';
-    if (days === 14) return 'Každé 2 týdny';
-    if (days === 30) return 'Měsíčně';
-    if (days === 365) return 'Ročně';
-    return `Každých ${days} dní`;
+    if (days === 7) return 'Weekly';
+    if (days === 14) return 'Every 2 weeks';
+    if (days === 30) return 'Monthly';
+    if (days === 365) return 'Yearly';
+    return `Every ${days} days`;
 }
 
 function daysUntil(dateStr: string): number {
@@ -89,9 +89,9 @@ function nextBillingLabel(startDateStr: string, intervalDays: number): string {
     if (!startDateStr || intervalDays < 1) return '';
     const next = calcNextBilling(startDateStr, intervalDays);
     const days = daysUntil(next);
-    if (days === 0) return `Příští vyúčtování: dnes (${next})`;
-    if (days === 1) return `Příští vyúčtování: zítra (${next})`;
-    return `Příští vyúčtování: za ${days} dní (${next})`;
+    if (days === 0) return `Next billing: today (${next})`;
+    if (days === 1) return `Next billing: tomorrow (${next})`;
+    return `Next billing: in ${days} days (${next})`;
 }
 
 function DatePickerInline({onClose, onSelect}: {
@@ -148,7 +148,7 @@ function DatePickerInline({onClose, onSelect}: {
                 </TouchableOpacity>
             </View>
             <View style={dpStyles.weekRow}>
-                {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(d => (
+                {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => (
                     <Text key={d} style={dpStyles.weekDay}>{d}</Text>
                 ))}
             </View>
@@ -179,14 +179,14 @@ function DatePickerInline({onClose, onSelect}: {
             </View>
             <View style={dpStyles.footer}>
                 <TouchableOpacity style={dpStyles.cancelBtn} onPress={onClose}>
-                    <Text style={dpStyles.cancelText}>Zrušit</Text>
+                    <Text style={dpStyles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[dpStyles.confirmBtn, !selected && dpStyles.confirmBtnDisabled]}
                     onPress={handleConfirm}
                     disabled={!selected}
                 >
-                    <Text style={dpStyles.confirmText}>Potvrdit</Text>
+                    <Text style={dpStyles.confirmText}>Confirm</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -218,11 +218,8 @@ export default function HomeScreen() {
 
     useEffect(() => {
         const unsubscribe = auth?.onAuthStateChanged((user) => {
-            if (user) {
-                loadSubscriptions(user.uid);
-            } else {
-                setLoading(false);
-            }
+            if (user) loadSubscriptions(user.uid);
+            else setLoading(false);
         });
         return () => unsubscribe?.();
     }, []);
@@ -247,38 +244,32 @@ export default function HomeScreen() {
     const getFinalDays = () => customInterval ? Number(customDays) : intervalDays;
 
     const handleAdd = async () => {
-        console.log('handleAdd called');
-        console.log('uid:', auth?.currentUser?.uid);
-        console.log('db:', !!db);
-        console.log('name:', name, 'amount:', amount, 'startDate:', startDate);
         let valid = true;
 
         if (!name.trim()) {
-            setNameError('Zadej název předplatného');
+            setNameError('Enter a subscription name');
             valid = false;
         } else setNameError('');
         if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-            setAmountError('Zadej platnou částku');
+            setAmountError('Enter a valid amount');
             valid = false;
         } else setAmountError('');
 
         const finalDays = getFinalDays();
         if (customInterval && (!customDays || isNaN(finalDays) || finalDays < 1)) {
-            setCustomDaysError('Zadej platný počet dní');
+            setCustomDaysError('Enter a valid number of days');
             valid = false;
-        } else {
-            setCustomDaysError('');
-        }
+        } else setCustomDaysError('');
 
         if (!valid) return;
 
         const uid = auth?.currentUser?.uid;
         if (!uid) {
-            Alert.alert('Chyba', 'Nejsi přihlášen');
+            Alert.alert('Error', 'You are not logged in');
             return;
         }
         if (!db) {
-            Alert.alert('Chyba', 'Databáze není dostupná');
+            Alert.alert('Error', 'Database not available');
             return;
         }
 
@@ -304,23 +295,23 @@ export default function HomeScreen() {
             setModalVisible(false);
         } catch (error: any) {
             console.log('Save error:', error);
-            Alert.alert('Chyba', 'Nepodařilo se uložit: ' + error.message);
+            Alert.alert('Error', 'Failed to save: ' + error.message);
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = (id: string) => {
-        Alert.alert('Smazat', 'Opravdu chceš smazat toto předplatné?', [
-            {text: 'Zrušit', style: 'cancel'},
+        Alert.alert('Delete', 'Are you sure you want to delete this subscription?', [
+            {text: 'Cancel', style: 'cancel'},
             {
-                text: 'Smazat', style: 'destructive', onPress: async () => {
+                text: 'Delete', style: 'destructive', onPress: async () => {
                     try {
                         if (!db) return;
                         await deleteDoc(doc(db, 'subscriptions', id));
                         setSubscriptions(prev => prev.filter(s => s.id !== id));
                     } catch {
-                        Alert.alert('Chyba', 'Nepodařilo se smazat předplatné');
+                        Alert.alert('Error', 'Failed to delete subscription');
                     }
                 }
             },
@@ -342,7 +333,6 @@ export default function HomeScreen() {
     };
 
     const totalMonthly = subscriptions.reduce((sum, s) => sum + (s.amount / s.intervalDays) * 30, 0);
-
     const previewLabel = nextBillingLabel(startDate, getFinalDays());
 
     if (loading) {
@@ -358,16 +348,16 @@ export default function HomeScreen() {
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.title}>Předplatná</Text>
-                        <Text style={styles.subtitle}>Správa výdajů</Text>
+                        <Text style={styles.title}>Subscriptions</Text>
+                        <Text style={styles.subtitle}>Spending overview</Text>
                     </View>
                 </View>
 
                 {subscriptions.length > 0 && (
                     <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Měsíční výdaje (odhad)</Text>
+                        <Text style={styles.summaryLabel}>Monthly expenses (estimate)</Text>
                         <Text style={styles.summaryAmount}>{totalMonthly.toFixed(0)} CZK</Text>
-                        <Text style={styles.summaryCount}>{subscriptions.length} předplatných</Text>
+                        <Text style={styles.summaryCount}>{subscriptions.length} subscriptions</Text>
                     </View>
                 )}
 
@@ -376,8 +366,8 @@ export default function HomeScreen() {
                         <View style={styles.emptyIconBox}>
                             <Ionicons name="card-outline" size={36} color="#ccc"/>
                         </View>
-                        <Text style={styles.emptyTitle}>Žádná předplatná</Text>
-                        <Text style={styles.emptySubtitle}>Přidej první předplatné pomocí tlačítka +</Text>
+                        <Text style={styles.emptyTitle}>No subscriptions</Text>
+                        <Text style={styles.emptySubtitle}>Add your first subscription using the + button</Text>
                     </View>
                 ) : (
                     subscriptions.map((sub) => {
@@ -395,10 +385,10 @@ export default function HomeScreen() {
                                     <Text style={styles.subCycle}>{daysToLabel(sub.intervalDays)}</Text>
                                     <Text style={styles.subNext}>
                                         {days < 0
-                                            ? 'Vyúčtování proběhlo'
+                                            ? 'Payment overdue'
                                             : days === 0
-                                                ? 'Platba dnes'
-                                                : `Příští platba za ${days} ${days === 1 ? 'den' : days < 5 ? 'dny' : 'dní'}`}
+                                                ? 'Payment today'
+                                                : `Next payment in ${days} ${days === 1 ? 'day' : 'days'}`}
                                     </Text>
                                 </View>
                                 <View style={styles.subAmountContainer}>
@@ -411,7 +401,7 @@ export default function HomeScreen() {
                 )}
 
                 {subscriptions.length > 0 && (
-                    <Text style={styles.hint}>Přidržením prstu předplatné smažeš</Text>
+                    <Text style={styles.hint}>Hold to delete a subscription</Text>
                 )}
             </ScrollView>
 
@@ -435,7 +425,7 @@ export default function HomeScreen() {
 
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Nové předplatné</Text>
+                            <Text style={styles.modalTitle}>New subscription</Text>
                             <TouchableOpacity onPress={() => {
                                 setModalVisible(false);
                                 resetForm();
@@ -446,7 +436,7 @@ export default function HomeScreen() {
 
                         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-                            <Text style={styles.fieldLabel}>Název</Text>
+                            <Text style={styles.fieldLabel}>Name</Text>
                             <View
                                 style={[styles.inputWrapper, nameFocused && styles.inputFocused, !!nameError && styles.inputError]}>
                                 <TextInput
@@ -464,7 +454,7 @@ export default function HomeScreen() {
                             </View>
                             {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
-                            <Text style={styles.fieldLabel}>Částka</Text>
+                            <Text style={styles.fieldLabel}>Amount</Text>
                             <View style={styles.amountRow}>
                                 <View
                                     style={[styles.inputWrapper, styles.amountInput, amountFocused && styles.inputFocused, !!amountError && styles.inputError]}>
@@ -497,7 +487,7 @@ export default function HomeScreen() {
                             </View>
                             {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
 
-                            <Text style={styles.fieldLabel}>Frekvence platby</Text>
+                            <Text style={styles.fieldLabel}>Billing frequency</Text>
                             <View style={styles.presetRow}>
                                 {BILLING_PRESETS.map(b => (
                                     <TouchableOpacity
@@ -518,7 +508,7 @@ export default function HomeScreen() {
                                     onPress={() => setCustomInterval(true)}
                                 >
                                     <Text
-                                        style={[styles.chipText, customInterval && styles.chipTextActive]}>Vlastní</Text>
+                                        style={[styles.chipText, customInterval && styles.chipTextActive]}>Custom</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -529,7 +519,7 @@ export default function HomeScreen() {
                                         <View style={styles.inputWithSuffix}>
                                             <TextInput
                                                 style={[styles.input, {flex: 1}]}
-                                                placeholder="Počet dní (např. 3)"
+                                                placeholder="Number of days (e.g. 3)"
                                                 placeholderTextColor="#aaa"
                                                 value={customDays}
                                                 onChangeText={(t) => {
@@ -540,14 +530,14 @@ export default function HomeScreen() {
                                                 onFocus={() => setCustomDaysFocused(true)}
                                                 onBlur={() => setCustomDaysFocused(false)}
                                             />
-                                            {customDays.length > 0 && <Text style={styles.inputSuffix}>dní</Text>}
+                                            {customDays.length > 0 && <Text style={styles.inputSuffix}>days</Text>}
                                         </View>
                                     </View>
                                     {customDaysError ? <Text style={styles.errorText}>{customDaysError}</Text> : null}
                                 </>
                             )}
 
-                            <Text style={styles.fieldLabel}>Datum začátku</Text>
+                            <Text style={styles.fieldLabel}>Start date</Text>
                             <TouchableOpacity
                                 style={[styles.inputWrapper, styles.datePickerBtn, styles.inputFocused]}
                                 onPress={() => setDatePickerVisible(true)}
@@ -566,7 +556,7 @@ export default function HomeScreen() {
                             >
                                 {saving
                                     ? <ActivityIndicator color="#fff"/>
-                                    : <Text style={styles.saveButtonText}>Uložit</Text>
+                                    : <Text style={styles.saveButtonText}>Save</Text>
                                 }
                             </TouchableOpacity>
 
