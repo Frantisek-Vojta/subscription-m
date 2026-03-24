@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "576674123121",
+    "project_id": "subscription-m-b4b1e",
+    "storage_bucket": "subscription-m-b4b1e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:576674123121:android:5f38612f017e7ee195bad0",
+        "android_client_info": {
+          "package_name": "com.frantisek.vojta.subscriptionm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "576674123121-se7vch48cs9qh48f0ktlscq2b5q5d81b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9BV9dWWUd3bFk38SEpjrga-Vpfx7L3YY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "576674123121-se7vch48cs9qh48f0ktlscq2b5q5d81b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
