@@ -242,7 +242,7 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
     container: {flex: 1},
-    header: {alignItems: 'center', padding: 30},
+    header: { alignItems: 'center', padding: 30, paddingTop: 70 },
     avatarContainer: {marginBottom: 15},
     avatar: {width: 100, height: 100, borderRadius: 50},
     usernameContainer: {flexDirection: 'row', alignItems: 'center'},

@@ -1,4 +1,3 @@
-// app/(auth)/_layout.tsx
 import { Stack } from 'expo-router';
 
 export default function AuthLayout() {
@@ -7,15 +6,13 @@ export default function AuthLayout() {
             <Stack.Screen
                 name="login"
                 options={{
-                    title: 'Login',
-                    headerShown: true
+                    headerShown: false
                 }}
             />
             <Stack.Screen
-                name="Register"
+                name="register"
                 options={{
-                    title: 'Register',
-                    headerShown: true
+                    headerShown: false
                 }}
             />
         </Stack>

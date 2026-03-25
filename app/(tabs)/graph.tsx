@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../../config/firebase';
 import Svg, { Path, Circle, Text as SvgText } from 'react-native-svg';
@@ -49,12 +51,11 @@ function PieChart({ data, dark }: { data: { name: string; monthly: number; color
             'Z',
         ].join(' ');
 
-        return { d, color: item.color, name: item.name, monthly: item.monthly };
+        return { d, color: item.color };
     });
 
     const centerBg = dark ? '#1a1a1a' : '#f9f9f7';
     const textColor = dark ? '#fff' : '#111';
-    const subColor = dark ? '#888' : '#888';
 
     return (
         <View style={{ alignItems: 'center' }}>
@@ -63,25 +64,10 @@ function PieChart({ data, dark }: { data: { name: string; monthly: number; color
                     <Path key={i} d={slice.d} fill={slice.color} />
                 ))}
                 <Circle cx={cx} cy={cy} r={innerR - 2} fill={centerBg} />
-                <SvgText
-                    x={cx}
-                    y={cy - 8}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="11"
-                    fill={subColor}
-                >
+                <SvgText x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle" fontSize="11" fill="#888">
                     total / month
                 </SvgText>
-                <SvgText
-                    x={cx}
-                    y={cy + 12}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="19"
-                    fontWeight="700"
-                    fill={textColor}
-                >
+                <SvgText x={cx} y={cy + 12} textAnchor="middle" dominantBaseline="middle" fontSize="19" fontWeight="700" fill={textColor}>
                     {total.toFixed(0)} CZK
                 </SvgText>
             </Svg>
@@ -90,17 +76,20 @@ function PieChart({ data, dark }: { data: { name: string; monthly: number; color
 }
 
 export default function GraphScreen() {
-    const systemScheme = useColorScheme();
     const [darkMode, setDarkMode] = useState(false);
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
+    useFocusEffect(
+        useCallback(() => {
+            AsyncStorage.getItem('darkMode').then(val => {
+                setDarkMode(val === 'true');
+            });
+        }, [])
+    );
+
     useEffect(() => {
-        AsyncStorage.getItem('darkMode').then(val => {
-            if (val !== null) setDarkMode(val === 'true');
-            else setDarkMode(systemScheme === 'dark');
-        });
         const unsubscribe = auth?.onAuthStateChanged((user) => {
             if (user) loadSubscriptions(user.uid);
             else setLoading(false);
@@ -142,14 +131,14 @@ export default function GraphScreen() {
     const bg = d ? '#111' : '#f9f9f7';
     const cardBg = d ? '#1a1a1a' : '#fff';
     const cardBorder = d ? '#2a2a2a' : '#e8e8e8';
-    const textPrimary = d ? '#fff' : '#111';
-    const textSecondary = d ? '#888' : '#888';
+    const tp = d ? '#fff' : '#111';
+    const ts = d ? '#888' : '#888';
     const rowBorder = d ? '#2a2a2a' : '#f0f0f0';
 
     if (loading) {
         return (
             <View style={[styles.loadingContainer, { backgroundColor: bg }]}>
-                <ActivityIndicator size="large" color={textPrimary} />
+                <ActivityIndicator size="large" color={tp} />
             </View>
         );
     }
@@ -159,24 +148,19 @@ export default function GraphScreen() {
             style={[styles.container, { backgroundColor: bg }]}
             contentContainerStyle={styles.content}
             refreshControl={
-                <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    tintColor={textPrimary}
-                    colors={[textPrimary]}
-                />
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tp} colors={[tp]} />
             }
         >
-            <Text style={[styles.title, { color: textPrimary }]}>Spending overview</Text>
-            <Text style={[styles.subtitle, { color: textSecondary }]}>Monthly subscriptions</Text>
+            <Text style={[styles.title, { color: tp }]}>Spending overview</Text>
+            <Text style={[styles.subtitle, { color: ts }]}>Monthly subscriptions</Text>
 
             {subscriptions.length === 0 ? (
                 <View style={styles.emptyState}>
                     <View style={[styles.emptyIconBox, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-                        <Ionicons name="pie-chart-outline" size={36} color={textSecondary} />
+                        <Ionicons name="pie-chart-outline" size={36} color={ts} />
                     </View>
-                    <Text style={[styles.emptyTitle, { color: textPrimary }]}>No data yet</Text>
-                    <Text style={[styles.emptySubtitle, { color: textSecondary }]}>Add subscriptions on the home screen</Text>
+                    <Text style={[styles.emptyTitle, { color: tp }]}>No data yet</Text>
+                    <Text style={[styles.emptySubtitle, { color: ts }]}>Add subscriptions on the home screen</Text>
                 </View>
             ) : (
                 <>
@@ -188,16 +172,16 @@ export default function GraphScreen() {
                         {chartData.map((item, i) => (
                             <View key={i} style={[styles.legendRow, { borderBottomColor: rowBorder }]}>
                                 <View style={[styles.dot, { backgroundColor: item.color }]} />
-                                <Text style={[styles.legendName, { color: textPrimary }]}>{item.name}</Text>
-                                <Text style={[styles.legendAmount, { color: textPrimary }]}>{item.monthly.toFixed(0)} CZK</Text>
-                                <Text style={[styles.legendPercent, { color: textSecondary }]}>
+                                <Text style={[styles.legendName, { color: tp }]}>{item.name}</Text>
+                                <Text style={[styles.legendAmount, { color: tp }]}>{item.monthly.toFixed(0)} CZK</Text>
+                                <Text style={[styles.legendPercent, { color: ts }]}>
                                     {Math.round((item.monthly / total) * 100)}%
                                 </Text>
                             </View>
                         ))}
                         <View style={styles.totalRow}>
-                            <Text style={[styles.totalLabel, { color: textPrimary }]}>Total</Text>
-                            <Text style={[styles.totalAmount, { color: textPrimary }]}>{total.toFixed(0)} CZK / month</Text>
+                            <Text style={[styles.totalLabel, { color: tp }]}>Total</Text>
+                            <Text style={[styles.totalAmount, { color: tp }]}>{total.toFixed(0)} CZK / month</Text>
                         </View>
                     </View>
                 </>
@@ -205,8 +189,6 @@ export default function GraphScreen() {
         </ScrollView>
     );
 }
-
-import { Ionicons } from '@expo/vector-icons';
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
