@@ -1,47 +1,27 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    Modal,
-    TextInput,
-    Alert,
-    ActivityIndicator,
-    useColorScheme,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
+    Modal, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
+import {useFocusEffect} from 'expo-router';
 import {collection, query, where, getDocs, addDoc, doc, deleteDoc} from 'firebase/firestore';
 import {db, auth} from '../../config/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CURRENCIES = ['CZK', 'EUR', 'USD', 'GBP'];
-
 const BILLING_PRESETS = [
     {label: 'Weekly', value: 7},
     {label: '2 weeks', value: 14},
     {label: 'Monthly', value: 30},
     {label: 'Yearly', value: 365},
 ];
-
-const SUB_COLORS = [
-    '#6366f1', '#f59e0b', '#10b981', '#3b82f6',
-    '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6',
-];
-
+const SUB_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 type Subscription = {
-    id: string;
-    name: string;
-    amount: number;
-    currency: string;
-    intervalDays: number;
-    customInterval: boolean;
-    startDate: string;
-    nextBilling: string;
-    color: string;
+    id: string; name: string; amount: number; currency: string;
+    intervalDays: number; customInterval: boolean; startDate: string; nextBilling: string; color: string;
 };
 
 function daysToLabel(days: number): string {
@@ -81,9 +61,7 @@ function calcNextBilling(startDateStr: string, intervalDays: number): string {
     today.setHours(0, 0, 0, 0);
     start.setHours(0, 0, 0, 0);
     let next = new Date(start);
-    while (next <= today) {
-        next.setDate(next.getDate() + intervalDays);
-    }
+    while (next <= today) next.setDate(next.getDate() + intervalDays);
     return formatDate(next);
 }
 
@@ -129,18 +107,16 @@ function DatePickerInline({onClose, onSelect, dark}: {
         onClose();
     };
 
-    const isSelected = (day: number) =>
-        selected?.day === day && selected?.month === viewMonth && selected?.year === viewYear;
-    const isToday = (day: number) =>
-        today.getDate() === day && today.getMonth() + 1 === viewMonth && today.getFullYear() === viewYear;
+    const isSelected = (day: number) => selected?.day === day && selected?.month === viewMonth && selected?.year === viewYear;
+    const isToday = (day: number) => today.getDate() === day && today.getMonth() + 1 === viewMonth && today.getFullYear() === viewYear;
 
     const cells: (number | null)[] = [];
     for (let i = 0; i < offset; i++) cells.push(null);
     for (let i = 1; i <= daysInMonth; i++) cells.push(i);
 
     const bg = dark ? '#1a1a1a' : '#fff';
-    const textPrimary = dark ? '#fff' : '#111';
-    const textSecondary = dark ? '#888' : '#888';
+    const tp = dark ? '#fff' : '#111';
+    const ts = dark ? '#888' : '#888';
     const navBg = dark ? '#2a2a2a' : '#f5f5f3';
     const todayBg = dark ? '#2a2a2a' : '#f0f0ee';
 
@@ -148,38 +124,30 @@ function DatePickerInline({onClose, onSelect, dark}: {
         <View style={[dpStyles.container, {backgroundColor: bg}]}>
             <View style={dpStyles.header}>
                 <TouchableOpacity onPress={prevMonth} style={[dpStyles.navBtn, {backgroundColor: navBg}]}>
-                    <Ionicons name="chevron-back" size={20} color={textPrimary}/>
+                    <Ionicons name="chevron-back" size={20} color={tp}/>
                 </TouchableOpacity>
-                <Text style={[dpStyles.monthLabel, {color: textPrimary}]}>{MONTHS[viewMonth - 1]} {viewYear}</Text>
+                <Text style={[dpStyles.monthLabel, {color: tp}]}>{MONTHS[viewMonth - 1]} {viewYear}</Text>
                 <TouchableOpacity onPress={nextMonth} style={[dpStyles.navBtn, {backgroundColor: navBg}]}>
-                    <Ionicons name="chevron-forward" size={20} color={textPrimary}/>
+                    <Ionicons name="chevron-forward" size={20} color={tp}/>
                 </TouchableOpacity>
             </View>
             <View style={dpStyles.weekRow}>
                 {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => (
-                    <Text key={d} style={[dpStyles.weekDay, {color: textSecondary}]}>{d}</Text>
+                    <Text key={d} style={[dpStyles.weekDay, {color: ts}]}>{d}</Text>
                 ))}
             </View>
             <View style={dpStyles.grid}>
                 {cells.map((day, i) => (
                     <TouchableOpacity
                         key={i}
-                        style={[
-                            dpStyles.cell,
-                            day !== null && isSelected(day) && {backgroundColor: textPrimary},
-                            day !== null && isToday(day) && !isSelected(day) && {backgroundColor: todayBg},
-                        ]}
+                        style={[dpStyles.cell, day !== null && isSelected(day) && {backgroundColor: tp}, day !== null && isToday(day) && !isSelected(day) && {backgroundColor: todayBg}]}
                         onPress={() => day !== null && setSelected({day, month: viewMonth, year: viewYear})}
                         disabled={day === null}
                         activeOpacity={0.7}
                     >
                         {day !== null && (
-                            <Text style={[
-                                dpStyles.cellText,
-                                {color: isSelected(day) ? bg : textPrimary},
-                                isSelected(day) && {fontWeight: '600'},
-                                isToday(day) && !isSelected(day) && {fontWeight: '600'},
-                            ]}>
+                            <Text
+                                style={[dpStyles.cellText, {color: isSelected(day) ? bg : tp}, (isSelected(day) || isToday(day) && !isSelected(day)) && {fontWeight: '600'}]}>
                                 {day}
                             </Text>
                         )}
@@ -188,10 +156,10 @@ function DatePickerInline({onClose, onSelect, dark}: {
             </View>
             <View style={dpStyles.footer}>
                 <TouchableOpacity style={dpStyles.cancelBtn} onPress={onClose}>
-                    <Text style={[dpStyles.cancelText, {color: textSecondary}]}>Cancel</Text>
+                    <Text style={[dpStyles.cancelText, {color: ts}]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[dpStyles.confirmBtn, {backgroundColor: textPrimary}, !selected && {backgroundColor: dark ? '#333' : '#ccc'}]}
+                    style={[dpStyles.confirmBtn, {backgroundColor: tp}, !selected && {backgroundColor: dark ? '#333' : '#ccc'}]}
                     onPress={handleConfirm}
                     disabled={!selected}
                 >
@@ -203,14 +171,12 @@ function DatePickerInline({onClose, onSelect, dark}: {
 }
 
 export default function HomeScreen() {
-    const systemScheme = useColorScheme();
     const [darkMode, setDarkMode] = useState(false);
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [datePickerVisible, setDatePickerVisible] = useState(false);
     const [saving, setSaving] = useState(false);
-
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
     const [currency, setCurrency] = useState('CZK');
@@ -218,20 +184,22 @@ export default function HomeScreen() {
     const [customInterval, setCustomInterval] = useState(false);
     const [customDays, setCustomDays] = useState('');
     const [startDate, setStartDate] = useState(formatDate(new Date()));
-
     const [nameError, setNameError] = useState('');
     const [amountError, setAmountError] = useState('');
     const [customDaysError, setCustomDaysError] = useState('');
-
     const [nameFocused, setNameFocused] = useState(false);
     const [amountFocused, setAmountFocused] = useState(false);
     const [customDaysFocused, setCustomDaysFocused] = useState(false);
 
+    useFocusEffect(
+        useCallback(() => {
+            AsyncStorage.getItem('darkMode').then(val => {
+                setDarkMode(val === 'true');
+            });
+        }, [])
+    );
+
     useEffect(() => {
-        AsyncStorage.getItem('darkMode').then(val => {
-            if (val !== null) setDarkMode(val === 'true');
-            else setDarkMode(systemScheme === 'dark');
-        });
         const unsubscribe = auth?.onAuthStateChanged((user) => {
             if (user) loadSubscriptions(user.uid);
             else setLoading(false);
@@ -243,8 +211,8 @@ export default function HomeScreen() {
     const bg = d ? '#111' : '#f9f9f7';
     const cardBg = d ? '#1a1a1a' : '#fff';
     const cardBorder = d ? '#2a2a2a' : '#e8e8e8';
-    const textPrimary = d ? '#fff' : '#111';
-    const textSecondary = d ? '#888' : '#888';
+    const tp = d ? '#fff' : '#111';
+    const ts = d ? '#888' : '#888';
     const modalBg = d ? '#1a1a1a' : '#f9f9f7';
     const inputBg = d ? '#2a2a2a' : '#fff';
     const inputBorder = d ? '#333' : '#e8e8e8';
@@ -284,7 +252,6 @@ export default function HomeScreen() {
             valid = false;
         } else setCustomDaysError('');
         if (!valid) return;
-
         const uid = auth?.currentUser?.uid;
         if (!uid) {
             Alert.alert('Error', 'You are not logged in');
@@ -294,7 +261,6 @@ export default function HomeScreen() {
             Alert.alert('Error', 'Database not available');
             return;
         }
-
         setSaving(true);
         try {
             const nextBilling = calcNextBilling(startDate, finalDays);
@@ -309,7 +275,7 @@ export default function HomeScreen() {
                 startDate,
                 nextBilling,
                 color,
-                createdAt: new Date().toISOString(),
+                createdAt: new Date().toISOString()
             };
             const docRef = await addDoc(collection(db, 'subscriptions'), newSub);
             setSubscriptions(prev => [...prev, {id: docRef.id, ...newSub}]);
@@ -356,22 +322,15 @@ export default function HomeScreen() {
     const totalMonthly = subscriptions.reduce((sum, s) => sum + (s.amount / s.intervalDays) * 30, 0);
     const previewLabel = nextBillingLabel(startDate, getFinalDays());
 
-    if (loading) {
-        return (
-            <View style={[styles.loadingContainer, {backgroundColor: bg}]}>
-                <ActivityIndicator size="large" color={textPrimary}/>
-            </View>
-        );
-    }
+    if (loading) return <View style={[styles.loadingContainer, {backgroundColor: bg}]}><ActivityIndicator size="large"
+                                                                                                          color={tp}/></View>;
 
     return (
         <View style={[styles.container, {backgroundColor: bg}]}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.header}>
-                    <View>
-                        <Text style={[styles.title, {color: textPrimary}]}>Subscriptions</Text>
-                        <Text style={[styles.subtitle, {color: textSecondary}]}>Spending overview</Text>
-                    </View>
+                    <Text style={[styles.title, {color: tp}]}>Subscriptions</Text>
+                    <Text style={[styles.subtitle, {color: ts}]}>Spending overview</Text>
                 </View>
 
                 {subscriptions.length > 0 && (
@@ -385,162 +344,127 @@ export default function HomeScreen() {
                 {subscriptions.length === 0 ? (
                     <View style={styles.emptyState}>
                         <View style={[styles.emptyIconBox, {backgroundColor: cardBg, borderColor: cardBorder}]}>
-                            <Ionicons name="card-outline" size={36} color={textSecondary}/>
+                            <Ionicons name="card-outline" size={36} color={ts}/>
                         </View>
-                        <Text style={[styles.emptyTitle, {color: textPrimary}]}>No subscriptions</Text>
-                        <Text style={[styles.emptySubtitle, {color: textSecondary}]}>Add your first subscription using
-                            the + button</Text>
+                        <Text style={[styles.emptyTitle, {color: tp}]}>No subscriptions</Text>
+                        <Text style={[styles.emptySubtitle, {color: ts}]}>Add your first subscription using the +
+                            button</Text>
                     </View>
                 ) : (
                     subscriptions.map((sub) => {
                         const days = daysUntil(sub.nextBilling);
                         return (
-                            <TouchableOpacity
-                                key={sub.id}
-                                style={[styles.subCard, {backgroundColor: cardBg, borderColor: cardBorder}]}
-                                onLongPress={() => handleDelete(sub.id)}
-                                activeOpacity={0.8}
-                            >
+                            <TouchableOpacity key={sub.id} style={[styles.subCard, {
+                                backgroundColor: cardBg,
+                                borderColor: cardBorder
+                            }]} onLongPress={() => handleDelete(sub.id)} activeOpacity={0.8}>
                                 <View style={[styles.subColorBar, {backgroundColor: sub.color}]}/>
                                 <View style={styles.subInfo}>
-                                    <Text style={[styles.subName, {color: textPrimary}]}>{sub.name}</Text>
-                                    <Text
-                                        style={[styles.subCycle, {color: textSecondary}]}>{daysToLabel(sub.intervalDays)}</Text>
+                                    <Text style={[styles.subName, {color: tp}]}>{sub.name}</Text>
+                                    <Text style={[styles.subCycle, {color: ts}]}>{daysToLabel(sub.intervalDays)}</Text>
                                     <Text style={[styles.subNext, {color: d ? '#555' : '#bbb'}]}>
                                         {days < 0 ? 'Payment overdue' : days === 0 ? 'Payment today' : `Next payment in ${days} ${days === 1 ? 'day' : 'days'}`}
                                     </Text>
                                 </View>
                                 <View style={styles.subAmountContainer}>
-                                    <Text style={[styles.subAmount, {color: textPrimary}]}>{sub.amount}</Text>
-                                    <Text style={[styles.subCurrency, {color: textSecondary}]}>{sub.currency}</Text>
+                                    <Text style={[styles.subAmount, {color: tp}]}>{sub.amount}</Text>
+                                    <Text style={[styles.subCurrency, {color: ts}]}>{sub.currency}</Text>
                                 </View>
                             </TouchableOpacity>
                         );
                     })
                 )}
-
-                {subscriptions.length > 0 && (
-                    <Text style={[styles.hint, {color: d ? '#444' : '#ccc'}]}>Hold to delete a subscription</Text>
-                )}
+                {subscriptions.length > 0 &&
+                    <Text style={[styles.hint, {color: d ? '#444' : '#ccc'}]}>Hold to delete a subscription</Text>}
             </ScrollView>
 
-            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-                <Ionicons name="add" size={28} color="#fff"/>
+            <TouchableOpacity style={[styles.fab, {backgroundColor: d ? '#fff' : '#111'}]}
+                              onPress={() => setModalVisible(true)}>
+                <Ionicons name="add" size={28} color={d ? '#111' : '#fff'}/>
             </TouchableOpacity>
 
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     {datePickerVisible && (
                         <View style={styles.datePickerOverlay}>
-                            <DatePickerInline
-                                onClose={() => setDatePickerVisible(false)}
-                                onSelect={(date) => {
-                                    setStartDate(date);
-                                    setDatePickerVisible(false);
-                                }}
-                                dark={darkMode}
-                            />
+                            <DatePickerInline onClose={() => setDatePickerVisible(false)} onSelect={(date) => {
+                                setStartDate(date);
+                                setDatePickerVisible(false);
+                            }} dark={darkMode}/>
                         </View>
                     )}
-
                     <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, {color: textPrimary}]}>New subscription</Text>
+                            <Text style={[styles.modalTitle, {color: tp}]}>New subscription</Text>
                             <TouchableOpacity onPress={() => {
                                 setModalVisible(false);
                                 resetForm();
                             }}>
-                                <Ionicons name="close" size={24} color={textSecondary}/>
+                                <Ionicons name="close" size={24} color={ts}/>
                             </TouchableOpacity>
                         </View>
-
                         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                            <Text style={[styles.fieldLabel, {color: textSecondary}]}>Name</Text>
+                            <Text style={[styles.fieldLabel, {color: ts}]}>Name</Text>
                             <View style={[styles.inputWrapper, {
                                 backgroundColor: inputBg,
-                                borderColor: nameFocused ? textPrimary : (nameError ? '#ff4444' : inputBorder)
+                                borderColor: nameFocused ? tp : (nameError ? '#ff4444' : inputBorder)
                             }]}>
-                                <TextInput
-                                    style={[styles.input, {color: textPrimary}]}
-                                    placeholder="Netflix, Spotify..."
-                                    placeholderTextColor={textSecondary}
-                                    value={name}
-                                    onChangeText={(t) => {
-                                        setName(t);
-                                        if (t.trim()) setNameError('');
-                                    }}
-                                    onFocus={() => setNameFocused(true)}
-                                    onBlur={() => setNameFocused(false)}
-                                />
+                                <TextInput style={[styles.input, {color: tp}]} placeholder="Netflix, Spotify..."
+                                           placeholderTextColor={ts} value={name} onChangeText={(t) => {
+                                    setName(t);
+                                    if (t.trim()) setNameError('');
+                                }} onFocus={() => setNameFocused(true)} onBlur={() => setNameFocused(false)}/>
                             </View>
                             {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
-                            <Text style={[styles.fieldLabel, {color: textSecondary}]}>Amount</Text>
+                            <Text style={[styles.fieldLabel, {color: ts}]}>Amount</Text>
                             <View style={styles.amountRow}>
                                 <View style={[styles.inputWrapper, styles.amountInput, {
                                     backgroundColor: inputBg,
-                                    borderColor: amountFocused ? textPrimary : (amountError ? '#ff4444' : inputBorder)
+                                    borderColor: amountFocused ? tp : (amountError ? '#ff4444' : inputBorder)
                                 }]}>
-                                    <TextInput
-                                        style={[styles.input, {color: textPrimary}]}
-                                        placeholder="0"
-                                        placeholderTextColor={textSecondary}
-                                        value={amount}
-                                        onChangeText={(t) => {
-                                            setAmount(t);
-                                            if (t && !isNaN(Number(t))) setAmountError('');
-                                        }}
-                                        keyboardType="numeric"
-                                        onFocus={() => setAmountFocused(true)}
-                                        onBlur={() => setAmountFocused(false)}
-                                    />
+                                    <TextInput style={[styles.input, {color: tp}]} placeholder="0"
+                                               placeholderTextColor={ts} value={amount} onChangeText={(t) => {
+                                        setAmount(t);
+                                        if (t && !isNaN(Number(t))) setAmountError('');
+                                    }} keyboardType="numeric" onFocus={() => setAmountFocused(true)}
+                                               onBlur={() => setAmountFocused(false)}/>
                                 </View>
                                 <View style={styles.currencyRow}>
                                     {CURRENCIES.map(c => (
-                                        <TouchableOpacity
-                                            key={c}
-                                            style={[styles.chipBtn, {
-                                                backgroundColor: currency === c ? textPrimary : inputBg,
-                                                borderColor: currency === c ? textPrimary : inputBorder
-                                            }]}
-                                            onPress={() => setCurrency(c)}
-                                        >
+                                        <TouchableOpacity key={c} style={[styles.chipBtn, {
+                                            backgroundColor: currency === c ? tp : inputBg,
+                                            borderColor: currency === c ? tp : inputBorder
+                                        }]} onPress={() => setCurrency(c)}>
                                             <Text
-                                                style={[styles.chipText, {color: currency === c ? (d ? '#111' : '#fff') : textSecondary}]}>{c}</Text>
+                                                style={[styles.chipText, {color: currency === c ? (d ? '#111' : '#fff') : ts}]}>{c}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
                             </View>
                             {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
 
-                            <Text style={[styles.fieldLabel, {color: textSecondary}]}>Billing frequency</Text>
+                            <Text style={[styles.fieldLabel, {color: ts}]}>Billing frequency</Text>
                             <View style={styles.presetRow}>
                                 {BILLING_PRESETS.map(b => (
-                                    <TouchableOpacity
-                                        key={b.value}
-                                        style={[styles.chipBtn, {
-                                            backgroundColor: !customInterval && intervalDays === b.value ? textPrimary : inputBg,
-                                            borderColor: !customInterval && intervalDays === b.value ? textPrimary : inputBorder
-                                        }]}
-                                        onPress={() => {
-                                            setIntervalDays(b.value);
-                                            setCustomInterval(false);
-                                            setCustomDaysError('');
-                                        }}
-                                    >
+                                    <TouchableOpacity key={b.value} style={[styles.chipBtn, {
+                                        backgroundColor: !customInterval && intervalDays === b.value ? tp : inputBg,
+                                        borderColor: !customInterval && intervalDays === b.value ? tp : inputBorder
+                                    }]} onPress={() => {
+                                        setIntervalDays(b.value);
+                                        setCustomInterval(false);
+                                        setCustomDaysError('');
+                                    }}>
                                         <Text
-                                            style={[styles.chipText, {color: !customInterval && intervalDays === b.value ? (d ? '#111' : '#fff') : textSecondary}]}>{b.label}</Text>
+                                            style={[styles.chipText, {color: !customInterval && intervalDays === b.value ? (d ? '#111' : '#fff') : ts}]}>{b.label}</Text>
                                     </TouchableOpacity>
                                 ))}
-                                <TouchableOpacity
-                                    style={[styles.chipBtn, {
-                                        backgroundColor: customInterval ? textPrimary : inputBg,
-                                        borderColor: customInterval ? textPrimary : inputBorder
-                                    }]}
-                                    onPress={() => setCustomInterval(true)}
-                                >
+                                <TouchableOpacity style={[styles.chipBtn, {
+                                    backgroundColor: customInterval ? tp : inputBg,
+                                    borderColor: customInterval ? tp : inputBorder
+                                }]} onPress={() => setCustomInterval(true)}>
                                     <Text
-                                        style={[styles.chipText, {color: customInterval ? (d ? '#111' : '#fff') : textSecondary}]}>Custom</Text>
+                                        style={[styles.chipText, {color: customInterval ? (d ? '#111' : '#fff') : ts}]}>Custom</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -549,58 +473,40 @@ export default function HomeScreen() {
                                     <View style={[styles.inputWrapper, {
                                         marginTop: 8,
                                         backgroundColor: inputBg,
-                                        borderColor: customDaysFocused ? textPrimary : (customDaysError ? '#ff4444' : inputBorder)
+                                        borderColor: customDaysFocused ? tp : (customDaysError ? '#ff4444' : inputBorder)
                                     }]}>
                                         <View style={styles.inputWithSuffix}>
-                                            <TextInput
-                                                style={[styles.input, {flex: 1, color: textPrimary}]}
-                                                placeholder="Number of days (e.g. 3)"
-                                                placeholderTextColor={textSecondary}
-                                                value={customDays}
-                                                onChangeText={(t) => {
-                                                    setCustomDays(t);
-                                                    if (t && Number(t) > 0) setCustomDaysError('');
-                                                }}
-                                                keyboardType="numeric"
-                                                onFocus={() => setCustomDaysFocused(true)}
-                                                onBlur={() => setCustomDaysFocused(false)}
-                                            />
+                                            <TextInput style={[styles.input, {flex: 1, color: tp}]}
+                                                       placeholder="Number of days (e.g. 3)" placeholderTextColor={ts}
+                                                       value={customDays} onChangeText={(t) => {
+                                                setCustomDays(t);
+                                                if (t && Number(t) > 0) setCustomDaysError('');
+                                            }} keyboardType="numeric" onFocus={() => setCustomDaysFocused(true)}
+                                                       onBlur={() => setCustomDaysFocused(false)}/>
                                             {customDays.length > 0 &&
-                                                <Text style={[styles.inputSuffix, {color: textSecondary}]}>days</Text>}
+                                                <Text style={[styles.inputSuffix, {color: ts}]}>days</Text>}
                                         </View>
                                     </View>
                                     {customDaysError ? <Text style={styles.errorText}>{customDaysError}</Text> : null}
                                 </>
                             )}
 
-                            <Text style={[styles.fieldLabel, {color: textSecondary}]}>Start date</Text>
-                            <TouchableOpacity
-                                style={[styles.inputWrapper, styles.datePickerBtn, {
-                                    backgroundColor: inputBg,
-                                    borderColor: textPrimary
-                                }]}
-                                onPress={() => setDatePickerVisible(true)}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="calendar-outline" size={18} color={textSecondary}
-                                          style={{marginRight: 10}}/>
-                                <Text style={[styles.datePickerText, {color: textPrimary}]}>{startDate}</Text>
+                            <Text style={[styles.fieldLabel, {color: ts}]}>Start date</Text>
+                            <TouchableOpacity style={[styles.inputWrapper, styles.datePickerBtn, {
+                                backgroundColor: inputBg,
+                                borderColor: tp
+                            }]} onPress={() => setDatePickerVisible(true)} activeOpacity={0.7}>
+                                <Ionicons name="calendar-outline" size={18} color={ts} style={{marginRight: 10}}/>
+                                <Text style={[styles.datePickerText, {color: tp}]}>{startDate}</Text>
                             </TouchableOpacity>
-                            {previewLabel ?
-                                <Text style={[styles.dateHint, {color: textSecondary}]}>{previewLabel}</Text> : null}
+                            {previewLabel ? <Text style={[styles.dateHint, {color: ts}]}>{previewLabel}</Text> : null}
 
                             <TouchableOpacity
-                                style={[styles.saveButton, {backgroundColor: textPrimary}, saving && {backgroundColor: d ? '#333' : '#555'}]}
-                                onPress={handleAdd}
-                                disabled={saving}
-                                activeOpacity={0.85}
-                            >
-                                {saving
-                                    ? <ActivityIndicator color={d ? '#111' : '#fff'}/>
-                                    : <Text style={[styles.saveButtonText, {color: d ? '#111' : '#fff'}]}>Save</Text>
-                                }
+                                style={[styles.saveButton, {backgroundColor: tp}, saving && {backgroundColor: d ? '#333' : '#555'}]}
+                                onPress={handleAdd} disabled={saving} activeOpacity={0.85}>
+                                {saving ? <ActivityIndicator color={d ? '#111' : '#fff'}/> :
+                                    <Text style={[styles.saveButtonText, {color: d ? '#111' : '#fff'}]}>Save</Text>}
                             </TouchableOpacity>
-
                             <View style={{height: 32}}/>
                         </ScrollView>
                     </View>
@@ -614,15 +520,23 @@ const styles = StyleSheet.create({
     container: {flex: 1},
     loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
     content: {padding: 24, paddingTop: 60, paddingBottom: 100},
-    header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24},
+    header: {marginBottom: 24},
     title: {fontSize: 28, fontWeight: '700', letterSpacing: -0.5},
     subtitle: {fontSize: 15, marginTop: 2},
     fab: {
-        position: 'absolute', bottom: 32, right: 24,
-        backgroundColor: '#111', width: 56, height: 56, borderRadius: 28,
-        justifyContent: 'center', alignItems: 'center',
-        shadowColor: '#000', shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.15, shadowRadius: 8, elevation: 6,
+        position: 'absolute',
+        bottom: 32,
+        right: 24,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 4},
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 6
     },
     summaryCard: {backgroundColor: '#111', borderRadius: 20, padding: 24, marginBottom: 20},
     summaryLabel: {fontSize: 13, color: '#888', marginBottom: 6},
@@ -691,9 +605,16 @@ const styles = StyleSheet.create({
     datePickerText: {fontSize: 16},
     dateHint: {fontSize: 12, marginTop: 6, marginLeft: 4},
     datePickerOverlay: {
-        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center', alignItems: 'center', padding: 24, zIndex: 999,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+        zIndex: 999
     },
     saveButton: {borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 24},
     saveButtonText: {fontSize: 16, fontWeight: '600'},
