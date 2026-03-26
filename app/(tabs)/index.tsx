@@ -9,7 +9,7 @@ import {collection, query, where, getDocs, addDoc, doc, deleteDoc} from 'firebas
 import {db, auth} from '../../config/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CURRENCIES = ['CZK', 'EUR', 'USD', 'GBP'];
+const CURRENCIES = ['CZK'];
 const BILLING_PRESETS = [
     {label: 'Weekly', value: 7},
     {label: '2 weeks', value: 14},
@@ -429,17 +429,6 @@ export default function HomeScreen() {
                                         if (t && !isNaN(Number(t))) setAmountError('');
                                     }} keyboardType="numeric" onFocus={() => setAmountFocused(true)}
                                                onBlur={() => setAmountFocused(false)}/>
-                                </View>
-                                <View style={styles.currencyRow}>
-                                    {CURRENCIES.map(c => (
-                                        <TouchableOpacity key={c} style={[styles.chipBtn, {
-                                            backgroundColor: currency === c ? tp : inputBg,
-                                            borderColor: currency === c ? tp : inputBorder
-                                        }]} onPress={() => setCurrency(c)}>
-                                            <Text
-                                                style={[styles.chipText, {color: currency === c ? (d ? '#111' : '#fff') : ts}]}>{c}</Text>
-                                        </TouchableOpacity>
-                                    ))}
                                 </View>
                             </View>
                             {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
