@@ -97,4 +97,5 @@ npm run lint
 ## Try it yourself
 
 web: https://subscription-m.expo.app/
+
 download for android (.apk): https://expo.dev/accounts/frantisek.vojta/projects/subscription-m/builds/c87b6982-f192-4186-9984-31f2c6e1fe06
