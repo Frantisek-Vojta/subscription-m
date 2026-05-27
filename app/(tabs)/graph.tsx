@@ -70,6 +70,7 @@ function PieChart({data, dark}: { data: { name: string; monthly: number; color: 
                     textAnchor="middle"
                     fontSize="11"
                     fill="#888"
+                    fontFamily="sans-serif"
                 >
                     total / month
                 </SvgText>
@@ -80,6 +81,7 @@ function PieChart({data, dark}: { data: { name: string; monthly: number; color: 
                     fontSize="19"
                     fontWeight="700"
                     fill={textColor}
+                    fontFamily="sans-serif"
                 >
                     {total.toFixed(0)} CZK
                 </SvgText>
