@@ -1,11 +1,13 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl} from 'react-native';
+import {View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Dimensions} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useFocusEffect} from 'expo-router';
 import {collection, query, where, getDocs} from 'firebase/firestore';
 import {db, auth} from '../../config/firebase';
 import Svg, {Path, Circle, Text as SvgText} from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 type Subscription = {
     id: string;
@@ -86,6 +88,88 @@ function PieChart({data, dark}: { data: { name: string; monthly: number; color: 
                     {total.toFixed(0)} CZK
                 </SvgText>
             </Svg>
+        </View>
+    );
+}
+
+function LineChart({ total, dark }: { total: number; dark: boolean }) {
+    const screenWidth = Dimensions.get('window').width - 150;
+    const maxHeight = 100;
+    const currentMonth = new Date().getMonth();
+    const tp = dark ? '#fff' : '#111';
+    const ts = dark ? '#888' : '#888';
+    const gridColor = dark ? '#2a2a2a' : '#f0f0f0';
+    const lineColor = '#6366f1';
+
+    const hardcodedData = [800, 380, 950, 620, 1100];
+    const monthData = MONTHS_SHORT.map((_, i) => {
+        if (i > currentMonth) return null;
+        return hardcodedData[i];
+    });
+
+    const validData = monthData.filter(v => v !== null) as number[];
+    const maxVal = Math.max(...validData, total);
+    const step = Math.ceil(maxVal / 4 / 100) * 100;
+    const maxValRounded = step * 5 || 1000;
+    const yLabels = [0, step, step * 2, step * 3, step * 4, step * 5];
+    const colWidth = screenWidth / 13;
+
+    const points = monthData
+        .map((val, i) => {
+            if (val === null) return null;
+            const x = i * colWidth + colWidth;
+            const y = maxHeight - (val / maxValRounded) * maxHeight;
+            return { x, y, val };
+        })
+        .filter(Boolean) as { x: number; y: number; val: number }[];
+
+    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+    return (
+        <View>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: tp, textAlign: 'center', marginBottom: 12 }}>
+                {validData.reduce((sum, v) => sum + v, 0)} CZK / {new Date().getFullYear()}
+            </Text>
+            <View style={{ flexDirection: 'row' }}>
+                <View style={{ justifyContent: 'space-between', height: maxHeight + 24, paddingBottom: 20, marginRight: 6, width: 36 }}>
+                    {[...yLabels].reverse().map((val, i) => (
+                        <Text key={i} style={{ fontSize: 8, color: ts, textAlign: 'right' }}>{val}</Text>
+                    ))}
+                </View>
+                <View style={{ width: screenWidth }}>
+                    <Svg width={screenWidth} height={maxHeight + 24}>
+                        {yLabels.map((_, i) => (
+                            <Path
+                                key={'h' + i}
+                                d={`M 0 ${maxHeight - (i / (yLabels.length - 1)) * maxHeight} L ${screenWidth} ${maxHeight - (i / (yLabels.length - 1)) * maxHeight}`}
+                                stroke={gridColor}
+                                strokeWidth="0.5"
+                                fill="none"
+                            />
+                        ))}
+                        {MONTHS_SHORT.map((_, i) => (
+                            <Path
+                                key={'v' + i}
+                                d={`M ${i * colWidth} 0 L ${i * colWidth} ${maxHeight}`}
+                                stroke={gridColor}
+                                strokeWidth="0.5"
+                                fill="none"
+                            />
+                        ))}
+                        {points.length > 1 && (
+                            <Path d={pathD} stroke={lineColor} strokeWidth="2.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                        )}
+                        {points.map((p, i) => (
+                            <Circle key={i} cx={p.x} cy={p.y} r="4" fill={lineColor} />
+                        ))}
+                    </Svg>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                        {MONTHS_SHORT.map((month, i) => (
+                            <Text key={i} style={{ fontSize: 8, color: i <= currentMonth ? tp : ts }}>{month}</Text>
+                        ))}
+                    </View>
+                </View>
+            </View>
         </View>
     );
 }
@@ -201,6 +285,11 @@ export default function GraphScreen() {
                             <Text style={[styles.totalLabel, {color: tp}]}>Total</Text>
                             <Text style={[styles.totalAmount, {color: tp}]}>{total.toFixed(0)} CZK / month</Text>
                         </View>
+                    </View>
+
+                    <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, marginBottom: 32 }]}>
+                        <Text style={[{ fontSize: 14, fontWeight: '600', color: tp, marginBottom: 16 }]}>Monthly overview</Text>
+                        <LineChart total={total} dark={darkMode} />
                     </View>
                 </>
             )}
