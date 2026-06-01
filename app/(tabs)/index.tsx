@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Modal, TextInput, Alert, ActivityIndicator,
+    Modal, TextInput, Alert, ActivityIndicator, Platform
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useFocusEffect} from 'expo-router';
@@ -340,19 +340,24 @@ export default function HomeScreen() {
     };
 
     const handleDelete = (id: string) => {
+        const doDelete = async () => {
+            try {
+                if (!db) return;
+                await deleteDoc(doc(db, 'subscriptions', id));
+                setSubscriptions(prev => prev.filter(s => s.id !== id));
+            } catch {
+                if (Platform.OS !== 'web') Alert.alert('Error', 'Failed to delete subscription');
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm('Are you sure you want to delete this subscription?')) doDelete();
+            return;
+        }
+
         Alert.alert('Delete', 'Are you sure you want to delete this subscription?', [
             {text: 'Cancel', style: 'cancel'},
-            {
-                text: 'Delete', style: 'destructive', onPress: async () => {
-                    try {
-                        if (!db) return;
-                        await deleteDoc(doc(db, 'subscriptions', id));
-                        setSubscriptions(prev => prev.filter(s => s.id !== id));
-                    } catch {
-                        Alert.alert('Error', 'Failed to delete subscription');
-                    }
-                }
-            },
+            {text: 'Delete', style: 'destructive', onPress: doDelete},
         ]);
     };
 
@@ -421,11 +426,17 @@ export default function HomeScreen() {
                                     <Text style={[styles.subAmount, {color: tp}]}>{sub.amount}</Text>
                                     <Text style={[styles.subCurrency, {color: ts}]}>{sub.currency}</Text>
                                 </View>
+                                {Platform.OS === 'web' && (
+                                    <TouchableOpacity onPress={() => handleDelete(sub.id)}
+                                                      style={{padding: 12, paddingRight: 16}}>
+                                        <Ionicons name="trash-outline" size={18} color="#ef4444"/>
+                                    </TouchableOpacity>
+                                )}
                             </TouchableOpacity>
                         );
                     })
                 )}
-                {subscriptions.length > 0 &&
+                {subscriptions.length > 0 && Platform.OS !== 'web' &&
                     <Text style={[styles.hint, {color: d ? '#444' : '#ccc'}]}>Hold to delete a subscription</Text>}
             </ScrollView>
 
@@ -462,6 +473,7 @@ export default function HomeScreen() {
                             }]}>
                                 <TextInput style={[styles.input, {color: tp}]} placeholder="Netflix, Spotify..."
                                            placeholderTextColor={ts} value={name} onChangeText={(t) => {
+                                    setName(t);
                                     setName(t);
                                     if (!t.trim()) setNameError('Enter a subscription name');
                                     else if (t.trim().length > 20) setNameError('Maximum 20 characters');
