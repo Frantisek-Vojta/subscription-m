@@ -285,9 +285,15 @@ export default function HomeScreen() {
         if (!name.trim()) {
             setNameError('Enter a subscription name');
             valid = false;
+        } else if (name.trim().length > 20) {
+            setNameError('Maximum 20 characters');
+            valid = false;
         } else setNameError('');
         if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
             setAmountError('Enter a valid amount');
+            valid = false;
+        } else if (Number(amount) > 10000) {
+            setAmountError('Maximum amount is 10 000 CZK');
             valid = false;
         } else setAmountError('');
         const finalDays = getFinalDays();
@@ -457,7 +463,9 @@ export default function HomeScreen() {
                                 <TextInput style={[styles.input, {color: tp}]} placeholder="Netflix, Spotify..."
                                            placeholderTextColor={ts} value={name} onChangeText={(t) => {
                                     setName(t);
-                                    if (t.trim()) setNameError('');
+                                    if (!t.trim()) setNameError('Enter a subscription name');
+                                    else if (t.trim().length > 20) setNameError('Maximum 20 characters');
+                                    else setNameError('');
                                 }} onFocus={() => setNameFocused(true)} onBlur={() => setNameFocused(false)}/>
                             </View>
                             {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
@@ -471,7 +479,9 @@ export default function HomeScreen() {
                                     <TextInput style={[styles.input, {color: tp}]} placeholder="0"
                                                placeholderTextColor={ts} value={amount} onChangeText={(t) => {
                                         setAmount(t);
-                                        if (t && !isNaN(Number(t))) setAmountError('');
+                                        if (!t || isNaN(Number(t)) || Number(t) <= 0) setAmountError('Enter a valid amount');
+                                        else if (Number(t) > 10000) setAmountError('Maximum amount is 10 000 CZK');
+                                        else setAmountError('');
                                     }} keyboardType="numeric" onFocus={() => setAmountFocused(true)}
                                                onBlur={() => setAmountFocused(false)}/>
                                 </View>
@@ -618,7 +628,7 @@ const styles = StyleSheet.create({
         marginTop: 16
     },
     inputWrapper: {borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14},
-    input: {fontSize: 16, padding: 0},
+    input: {fontSize: 16, padding: 0, outlineStyle: 'none'} as any,
     inputWithSuffix: {flexDirection: 'row', alignItems: 'center'},
     inputSuffix: {fontSize: 14, marginLeft: 8},
     amountRow: {flexDirection: 'row', alignItems: 'center'},
