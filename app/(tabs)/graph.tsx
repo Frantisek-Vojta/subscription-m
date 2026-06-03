@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     title: {fontSize: 28, fontWeight: '700', letterSpacing: -0.5, marginBottom: 4},
     subtitle: {fontSize: 15, marginBottom: 24},
     card: {borderRadius: 20, borderWidth: 1.5, padding: 20, alignItems: 'center', marginBottom: 16},
-    legendCard: {borderRadius: 20, borderWidth: 1.5, padding: 20, marginBottom: 32},
+    legendCard: {borderRadius: 20, borderWidth: 1.5, padding: 20, marginBottom: 16},
     legendRow: {flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1},
     dot: {width: 12, height: 12, borderRadius: 6, marginRight: 12},
     legendName: {flex: 1, fontSize: 15, fontWeight: '500'},
