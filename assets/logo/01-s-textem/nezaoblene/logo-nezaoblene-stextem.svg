@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Vrstva_1" data-name="Vrstva 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 180">
+  <defs>
+    <style>
+      .cls-1 {
+        letter-spacing: 0em;
+      }
+
+      .cls-2 {
+        font-family: Inter-Bold, Inter;
+        font-size: 58px;
+        font-variation-settings: 'opsz' 14, 'wght' 700;
+        font-weight: 700;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #fff;
+      }
+
+      .cls-4 {
+        fill: #2563eb;
+      }
+    </style>
+  </defs>
+  <rect class="cls-4" width="700" height="180"/>
+  <path class="cls-3" d="M177.71,51.57c2.35,0,4.27,1.92,4.27,4.27v8.54h-111.03v-8.54c0-2.35,1.92-4.27,4.27-4.27h102.49ZM181.98,81.46v42.7c0,2.35-1.92,4.27-4.27,4.27h-102.49c-2.35,0-4.27-1.92-4.27-4.27v-42.7h111.03ZM75.22,38.76c-9.42,0-17.08,7.66-17.08,17.08v68.33c0,9.42,7.66,17.08,17.08,17.08h102.49c9.42,0,17.08-7.66,17.08-17.08V55.84c0-9.42-7.66-17.08-17.08-17.08h-102.49ZM79.49,113.49c0,3.55,2.86,6.41,6.41,6.41h12.81c3.55,0,6.41-2.86,6.41-6.41s-2.86-6.41-6.41-6.41h-12.81c-3.55,0-6.41,2.86-6.41,6.41ZM117.93,113.49c0,3.55,2.86,6.41,6.41,6.41h17.08c3.55,0,6.41-2.86,6.41-6.41s-2.86-6.41-6.41-6.41h-17.08c-3.55,0-6.41,2.86-6.41,6.41Z"/>
+  <text class="cls-2" transform="translate(242.17 111.01)"><tspan x="0" y="0">Subsc</tspan><tspan class="cls-1" x="177.26" y="0">r</tspan><tspan x="201.13" y="0">iptionM</tspan></text>
+</svg>
