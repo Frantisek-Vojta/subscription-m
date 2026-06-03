@@ -68,8 +68,9 @@ function PieChart({data, dark}: { data: { name: string; monthly: number; color: 
                 <Circle cx={cx} cy={cy} r={innerR - 2} fill={centerBg}/>
                 <SvgText
                     x={cx}
-                    y={cy - 6}
+                    y={cy - 10}
                     textAnchor="middle"
+                    alignmentBaseline="middle"
                     fontSize="11"
                     fill="#888"
                     fontFamily="sans-serif"
@@ -78,8 +79,9 @@ function PieChart({data, dark}: { data: { name: string; monthly: number; color: 
                 </SvgText>
                 <SvgText
                     x={cx}
-                    y={cy + 16}
+                    y={cy + 14}
                     textAnchor="middle"
+                    alignmentBaseline="middle"
                     fontSize="19"
                     fontWeight="700"
                     fill={textColor}
@@ -101,16 +103,19 @@ function LineChart({ total, dark }: { total: number; dark: boolean }) {
     const gridColor = dark ? '#2a2a2a' : '#f0f0f0';
     const lineColor = '#6366f1';
 
-    const hardcodedData = [800, 380, 950, 620, 1100];
+    const hardcodedData = [800, 380, 950, 620, 1100, 740, 860, 920, 670, 1050, 780, 990];
     const monthData = MONTHS_SHORT.map((_, i) => {
         if (i > currentMonth) return null;
-        return hardcodedData[i];
+        const val = hardcodedData[i];
+        if (val === undefined || val === null) return null;
+        return val;
     });
 
-    const validData = monthData.filter(v => v !== null) as number[];
-    const maxVal = Math.max(...validData, total);
-    const step = Math.ceil(maxVal / 4 / 100) * 100;
-    const maxValRounded = step * 5 || 1000;
+    const validData = monthData.filter(v => v !== null && v !== undefined) as number[];
+    if (validData.length === 0) return null;
+    const maxVal = Math.max(...validData, total, 1);
+    const step = Math.max(Math.ceil(maxVal / 4 / 100) * 100, 100);
+    const maxValRounded = step * 5;
     const yLabels = [0, step, step * 2, step * 3, step * 4, step * 5];
     const colWidth = screenWidth / 13;
 
@@ -119,6 +124,7 @@ function LineChart({ total, dark }: { total: number; dark: boolean }) {
             if (val === null) return null;
             const x = i * colWidth + colWidth;
             const y = maxHeight - (val / maxValRounded) * maxHeight;
+            if (!isFinite(x) || !isFinite(y)) return null;
             return { x, y, val };
         })
         .filter(Boolean) as { x: number; y: number; val: number }[];
