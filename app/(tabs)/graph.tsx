@@ -6,6 +6,7 @@ import {collection, query, where, getDocs} from 'firebase/firestore';
 import {db, auth} from '../../config/firebase';
 import Svg, {Path, Circle, Text as SvgText} from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -78,16 +79,18 @@ function PieChart({data, dark}: { data: { name: string; monthly: number; color: 
                     total / month
                 </SvgText>
                 <SvgText
-                    x={cx}
-                    y={cy + 14}
+                    // x={cx}
+                    // y={cy + 14}
+                    x={Platform.OS === 'web' ? cx : cx - 20}
+                    y={Platform.OS === 'web' ? cy + 8: cy + 8}
                     textAnchor="middle"
-                    alignmentBaseline="middle"
+                    alignmentBaseline="central"
                     fontSize="19"
                     fontWeight="700"
                     fill={textColor}
                     fontFamily="sans-serif"
                 >
-                    {total.toFixed(0)} CZK
+                    {total.toFixed(0)}  CZK
                 </SvgText>
             </Svg>
         </View>
