@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Modal, TextInput, Alert, ActivityIndicator, Platform
+    Modal, TextInput, Alert, ActivityIndicator, Platform, KeyboardAvoidingView
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useFocusEffect} from 'expo-router';
@@ -76,14 +76,15 @@ function nextBillingLabel(startDateStr: string, intervalDays: number): string {
     return `Next billing: in ${days} days (${next})`;
 }
 
-async function scheduleNotification(name: string, nextBillingStr: string) {
+async function scheduleNotification(name: string, nextBillingStr: string, amount: number) {
     try {
         const notifyDate = new Date(new Date().getTime() + 60 * 1000);
 
         await Notifications.scheduleNotificationAsync({
             content: {
                 title: '💳 Blíží se platba!',
-                body: `${name} – platba za 3 dny`,
+                body: `${name} – ${amount} CZK za 3 dny (${nextBillingStr})`,
+
             },
             trigger: {
                 type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -329,7 +330,7 @@ export default function HomeScreen() {
             };
             const docRef = await addDoc(collection(db, 'subscriptions'), newSub);
             setSubscriptions(prev => [...prev, {id: docRef.id, ...newSub}]);
-            await scheduleNotification(name.trim(), nextBilling);
+            await scheduleNotification(name.trim(), nextBilling, Number(amount));
             resetForm();
             setModalVisible(false);
         } catch (error: any) {
@@ -390,10 +391,10 @@ export default function HomeScreen() {
                 </View>
 
                 {subscriptions.length > 0 && (
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Monthly expenses (estimate)</Text>
-                        <Text style={styles.summaryAmount}>{totalMonthly.toFixed(0)} CZK</Text>
-                        <Text style={styles.summaryCount}>{subscriptions.length} subscriptions</Text>
+                    <View style={[styles.summaryCard, {backgroundColor: d ? '#ffffff' : '#111'}]}>
+                        <Text style={[styles.summaryLabel, {color: d ? '#888' : '#555'}]}>Monthly expenses (estimate)</Text>
+                        <Text style={[styles.summaryAmount, {color: d ? '#111' : '#fff'}]}>{totalMonthly.toFixed(0)} CZK</Text>
+                        <Text style={[styles.summaryCount, {color: d ? '#888' : '#555'}]}>{subscriptions.length} subscriptions</Text>
                     </View>
                 )}
 
@@ -455,117 +456,122 @@ export default function HomeScreen() {
                             }} dark={darkMode}/>
                         </View>
                     )}
-                    <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, {color: tp}]}>New subscription</Text>
-                            <TouchableOpacity onPress={() => {
-                                setModalVisible(false);
-                                resetForm();
-                            }}>
-                                <Ionicons name="close" size={24} color={ts}/>
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                            <Text style={[styles.fieldLabel, {color: ts}]}>Name</Text>
-                            <View style={[styles.inputWrapper, {
-                                backgroundColor: inputBg,
-                                borderColor: nameFocused ? tp : (nameError ? '#ff4444' : inputBorder)
-                            }]}>
-                                <TextInput style={[styles.input, {color: tp}]} placeholder="Netflix, Spotify..."
-                                           placeholderTextColor={ts} value={name} onChangeText={(t) => {
-                                    setName(t);
-                                    setName(t);
-                                    if (!t.trim()) setNameError('Enter a subscription name');
-                                    else if (t.trim().length > 20) setNameError('Maximum 20 characters');
-                                    else setNameError('');
-                                }} onFocus={() => setNameFocused(true)} onBlur={() => setNameFocused(false)}/>
-                            </View>
-                            {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
-
-                            <Text style={[styles.fieldLabel, {color: ts}]}>Amount</Text>
-                            <View style={styles.amountRow}>
-                                <View style={[styles.inputWrapper, styles.amountInput, {
-                                    backgroundColor: inputBg,
-                                    borderColor: amountFocused ? tp : (amountError ? '#ff4444' : inputBorder)
-                                }]}>
-                                    <TextInput style={[styles.input, {color: tp}]} placeholder="0"
-                                               placeholderTextColor={ts} value={amount} onChangeText={(t) => {
-                                        setAmount(t);
-                                        if (!t || isNaN(Number(t)) || Number(t) <= 0) setAmountError('Enter a valid amount');
-                                        else if (Number(t) > 10000) setAmountError('Maximum amount is 10 000 CZK');
-                                        else setAmountError('');
-                                    }} keyboardType="numeric" onFocus={() => setAmountFocused(true)}
-                                               onBlur={() => setAmountFocused(false)}/>
-                                </View>
-                            </View>
-                            {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
-
-                            <Text style={[styles.fieldLabel, {color: ts}]}>Billing frequency</Text>
-                            <View style={styles.presetRow}>
-                                {BILLING_PRESETS.map(b => (
-                                    <TouchableOpacity key={b.value} style={[styles.chipBtn, {
-                                        backgroundColor: !customInterval && intervalDays === b.value ? tp : inputBg,
-                                        borderColor: !customInterval && intervalDays === b.value ? tp : inputBorder
-                                    }]} onPress={() => {
-                                        setIntervalDays(b.value);
-                                        setCustomInterval(false);
-                                        setCustomDaysError('');
-                                    }}>
-                                        <Text
-                                            style={[styles.chipText, {color: !customInterval && intervalDays === b.value ? (d ? '#111' : '#fff') : ts}]}>{b.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                                <TouchableOpacity style={[styles.chipBtn, {
-                                    backgroundColor: customInterval ? tp : inputBg,
-                                    borderColor: customInterval ? tp : inputBorder
-                                }]} onPress={() => setCustomInterval(true)}>
-                                    <Text
-                                        style={[styles.chipText, {color: customInterval ? (d ? '#111' : '#fff') : ts}]}>Custom</Text>
+                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                        <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
+                            <View style={styles.modalHeader}>
+                                <Text style={[styles.modalTitle, {color: tp}]}>New subscription</Text>
+                                <TouchableOpacity onPress={() => {
+                                    setModalVisible(false);
+                                    resetForm();
+                                }}>
+                                    <Ionicons name="close" size={24} color={ts}/>
                                 </TouchableOpacity>
                             </View>
+                            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                                <Text style={[styles.fieldLabel, {color: ts}]}>Name</Text>
+                                <View style={[styles.inputWrapper, {
+                                    backgroundColor: inputBg,
+                                    borderColor: nameFocused ? tp : (nameError ? '#ff4444' : inputBorder)
+                                }]}>
+                                    <TextInput style={[styles.input, {color: tp}]} placeholder="Netflix, Spotify..."
+                                               placeholderTextColor={ts} value={name} onChangeText={(t) => {
+                                        setName(t);
+                                        setName(t);
+                                        if (!t.trim()) setNameError('Enter a subscription name');
+                                        else if (t.trim().length > 20) setNameError('Maximum 20 characters');
+                                        else setNameError('');
+                                    }} onFocus={() => setNameFocused(true)} onBlur={() => setNameFocused(false)}/>
+                                </View>
+                                {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
-                            {customInterval && (
-                                <>
-                                    <View style={[styles.inputWrapper, {
-                                        marginTop: 8,
+                                <Text style={[styles.fieldLabel, {color: ts}]}>Amount</Text>
+                                <View style={styles.amountRow}>
+                                    <View style={[styles.inputWrapper, styles.amountInput, {
                                         backgroundColor: inputBg,
-                                        borderColor: customDaysFocused ? tp : (customDaysError ? '#ff4444' : inputBorder)
+                                        borderColor: amountFocused ? tp : (amountError ? '#ff4444' : inputBorder)
                                     }]}>
-                                        <View style={styles.inputWithSuffix}>
-                                            <TextInput style={[styles.input, {flex: 1, color: tp}]}
-                                                       placeholder="Number of days (e.g. 3)" placeholderTextColor={ts}
-                                                       value={customDays} onChangeText={(t) => {
-                                                setCustomDays(t);
-                                                if (t && Number(t) > 0) setCustomDaysError('');
-                                            }} keyboardType="numeric" onFocus={() => setCustomDaysFocused(true)}
-                                                       onBlur={() => setCustomDaysFocused(false)}/>
-                                            {customDays.length > 0 &&
-                                                <Text style={[styles.inputSuffix, {color: ts}]}>days</Text>}
-                                        </View>
+                                        <TextInput style={[styles.input, {color: tp}]} placeholder="0"
+                                                   placeholderTextColor={ts} value={amount} onChangeText={(t) => {
+                                            setAmount(t);
+                                            if (!t || isNaN(Number(t)) || Number(t) <= 0) setAmountError('Enter a valid amount');
+                                            else if (Number(t) > 10000) setAmountError('Maximum amount is 10 000 CZK');
+                                            else setAmountError('');
+                                        }} keyboardType="numeric" onFocus={() => setAmountFocused(true)}
+                                                   onBlur={() => setAmountFocused(false)}/>
                                     </View>
-                                    {customDaysError ? <Text style={styles.errorText}>{customDaysError}</Text> : null}
-                                </>
-                            )}
+                                </View>
+                                {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
 
-                            <Text style={[styles.fieldLabel, {color: ts}]}>Start date</Text>
-                            <TouchableOpacity style={[styles.inputWrapper, styles.datePickerBtn, {
-                                backgroundColor: inputBg,
-                                borderColor: tp
-                            }]} onPress={() => setDatePickerVisible(true)} activeOpacity={0.7}>
-                                <Ionicons name="calendar-outline" size={18} color={ts} style={{marginRight: 10}}/>
-                                <Text style={[styles.datePickerText, {color: tp}]}>{startDate}</Text>
-                            </TouchableOpacity>
-                            {previewLabel ? <Text style={[styles.dateHint, {color: ts}]}>{previewLabel}</Text> : null}
+                                <Text style={[styles.fieldLabel, {color: ts}]}>Billing frequency</Text>
+                                <View style={styles.presetRow}>
+                                    {BILLING_PRESETS.map(b => (
+                                        <TouchableOpacity key={b.value} style={[styles.chipBtn, {
+                                            backgroundColor: !customInterval && intervalDays === b.value ? tp : inputBg,
+                                            borderColor: !customInterval && intervalDays === b.value ? tp : inputBorder
+                                        }]} onPress={() => {
+                                            setIntervalDays(b.value);
+                                            setCustomInterval(false);
+                                            setCustomDaysError('');
+                                        }}>
+                                            <Text
+                                                style={[styles.chipText, {color: !customInterval && intervalDays === b.value ? (d ? '#111' : '#fff') : ts}]}>{b.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                    <TouchableOpacity style={[styles.chipBtn, {
+                                        backgroundColor: customInterval ? tp : inputBg,
+                                        borderColor: customInterval ? tp : inputBorder
+                                    }]} onPress={() => setCustomInterval(true)}>
+                                        <Text
+                                            style={[styles.chipText, {color: customInterval ? (d ? '#111' : '#fff') : ts}]}>Custom</Text>
+                                    </TouchableOpacity>
+                                </View>
 
-                            <TouchableOpacity
-                                style={[styles.saveButton, {backgroundColor: tp}, saving && {backgroundColor: d ? '#333' : '#555'}]}
-                                onPress={handleAdd} disabled={saving} activeOpacity={0.85}>
-                                {saving ? <ActivityIndicator color={d ? '#111' : '#fff'}/> :
-                                    <Text style={[styles.saveButtonText, {color: d ? '#111' : '#fff'}]}>Save</Text>}
-                            </TouchableOpacity>
-                            <View style={{height: 32}}/>
-                        </ScrollView>
-                    </View>
+                                {customInterval && (
+                                    <>
+                                        <View style={[styles.inputWrapper, {
+                                            marginTop: 8,
+                                            backgroundColor: inputBg,
+                                            borderColor: customDaysFocused ? tp : (customDaysError ? '#ff4444' : inputBorder)
+                                        }]}>
+                                            <View style={styles.inputWithSuffix}>
+                                                <TextInput style={[styles.input, {flex: 1, color: tp}]}
+                                                           placeholder="Number of days (e.g. 3)"
+                                                           placeholderTextColor={ts}
+                                                           value={customDays} onChangeText={(t) => {
+                                                    setCustomDays(t);
+                                                    if (t && Number(t) > 0) setCustomDaysError('');
+                                                }} keyboardType="numeric" onFocus={() => setCustomDaysFocused(true)}
+                                                           onBlur={() => setCustomDaysFocused(false)}/>
+                                                {customDays.length > 0 &&
+                                                    <Text style={[styles.inputSuffix, {color: ts}]}>days</Text>}
+                                            </View>
+                                        </View>
+                                        {customDaysError ?
+                                            <Text style={styles.errorText}>{customDaysError}</Text> : null}
+                                    </>
+                                )}
+
+                                <Text style={[styles.fieldLabel, {color: ts}]}>Start date</Text>
+                                <TouchableOpacity style={[styles.inputWrapper, styles.datePickerBtn, {
+                                    backgroundColor: inputBg,
+                                    borderColor: tp
+                                }]} onPress={() => setDatePickerVisible(true)} activeOpacity={0.7}>
+                                    <Ionicons name="calendar-outline" size={18} color={ts} style={{marginRight: 10}}/>
+                                    <Text style={[styles.datePickerText, {color: tp}]}>{startDate}</Text>
+                                </TouchableOpacity>
+                                {previewLabel ?
+                                    <Text style={[styles.dateHint, {color: ts}]}>{previewLabel}</Text> : null}
+
+                                <TouchableOpacity
+                                    style={[styles.saveButton, {backgroundColor: tp}, saving && {backgroundColor: d ? '#333' : '#555'}]}
+                                    onPress={handleAdd} disabled={saving} activeOpacity={0.85}>
+                                    {saving ? <ActivityIndicator color={d ? '#111' : '#fff'}/> :
+                                        <Text style={[styles.saveButtonText, {color: d ? '#111' : '#fff'}]}>Save</Text>}
+                                </TouchableOpacity>
+                                <View style={{height: 32}}/>
+                            </ScrollView>
+                        </View>
+                    </KeyboardAvoidingView>
                 </View>
             </Modal>
         </View>
@@ -594,10 +600,10 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 6
     },
-    summaryCard: {backgroundColor: '#111', padding: 24, marginBottom: 20},
-    summaryLabel: {fontSize: 13, color: '#888', marginBottom: 6},
-    summaryAmount: {fontSize: 36, fontWeight: '700', color: '#fff', letterSpacing: -1},
-    summaryCount: {fontSize: 13, color: '#555', marginTop: 4},
+    summaryCard: {padding: 24, marginBottom: 20, borderRadius: 16},
+    summaryLabel: {fontSize: 13, marginBottom: 6},
+    summaryAmount: {fontSize: 36, fontWeight: '700', letterSpacing: -1},
+    summaryCount: {fontSize: 13, marginTop: 4},
     subCard: {
         borderRadius: 16,
         borderWidth: 1.5,
