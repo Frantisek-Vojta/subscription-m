@@ -8,23 +8,21 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    useColorScheme
 } from 'react-native';
 import {router} from 'expo-router';
 import {FontAwesome} from '@expo/vector-icons';
 import {User, updateProfile, sendPasswordResetEmail, signOut} from 'firebase/auth';
 import {auth} from '../../config/firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useTheme} from '../../context/ThemeContext';
 
 export default function Profile() {
-    const systemScheme = useColorScheme();
+    const {darkMode, toggleDarkMode} = useTheme();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [username, setUsername] = useState('');
     const [editingUsername, setEditingUsername] = useState(false);
     const [newUsername, setNewUsername] = useState('');
     const [passwordMessage, setPasswordMessage] = useState('');
-    const [darkMode, setDarkMode] = useState(false);
 
     useEffect(() => {
         const currentUser = auth?.currentUser ?? null;
@@ -32,26 +30,8 @@ export default function Profile() {
         const initialUsername = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
         setUsername(initialUsername);
         setNewUsername(initialUsername);
-        loadTheme();
         setLoading(false);
     }, []);
-
-    const loadTheme = async () => {
-        try {
-            const saved = await AsyncStorage.getItem('darkMode');
-            if (saved !== null) setDarkMode(saved === 'true');
-            else setDarkMode(systemScheme === 'dark');
-        } catch {
-        }
-    };
-
-    const toggleDarkMode = async (value: boolean) => {
-        setDarkMode(value);
-        try {
-            await AsyncStorage.setItem('darkMode', String(value));
-        } catch {
-        }
-    };
 
     const handleUpdateUsername = async () => {
         try {

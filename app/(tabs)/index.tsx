@@ -1,13 +1,12 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     Modal, TextInput, Alert, ActivityIndicator, Platform, KeyboardAvoidingView
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import {useFocusEffect} from 'expo-router';
 import {collection, query, where, getDocs, addDoc, doc, deleteDoc, updateDoc} from 'firebase/firestore';
 import {db, auth} from '../../config/firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useTheme} from '../../context/ThemeContext';
 import * as Notifications from 'expo-notifications';
 
 
@@ -195,7 +194,7 @@ function DatePickerInline({onClose, onSelect, dark}: {
 }
 
 export default function HomeScreen() {
-    const [darkMode, setDarkMode] = useState(false);
+    const {darkMode} = useTheme();
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
@@ -214,14 +213,6 @@ export default function HomeScreen() {
     const [nameFocused, setNameFocused] = useState(false);
     const [amountFocused, setAmountFocused] = useState(false);
     const [customDaysFocused, setCustomDaysFocused] = useState(false);
-
-    useFocusEffect(
-        useCallback(() => {
-            AsyncStorage.getItem('darkMode').then(val => {
-                setDarkMode(val === 'true');
-            });
-        }, [])
-    );
 
     useEffect(() => {
         const unsubscribe = auth?.onAuthStateChanged((user) => {

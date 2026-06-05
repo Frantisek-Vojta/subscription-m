@@ -1,12 +1,10 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Dimensions} from 'react-native';
+import {View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Dimensions, Platform} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import {useFocusEffect} from 'expo-router';
 import {collection, query, where, getDocs} from 'firebase/firestore';
 import {db, auth} from '../../config/firebase';
 import Svg, {Path, Circle, Text as SvgText} from 'react-native-svg';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import {useTheme} from '../../context/ThemeContext';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -184,18 +182,10 @@ function LineChart({ total, dark }: { total: number; dark: boolean }) {
 }
 
 export default function GraphScreen() {
-    const [darkMode, setDarkMode] = useState(false);
+    const {darkMode} = useTheme();
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-
-    useFocusEffect(
-        useCallback(() => {
-            AsyncStorage.getItem('darkMode').then(val => {
-                setDarkMode(val === 'true');
-            });
-        }, [])
-    );
 
     useEffect(() => {
         const unsubscribe = auth?.onAuthStateChanged((user) => {
