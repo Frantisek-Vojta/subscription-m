@@ -383,9 +383,12 @@ export default function HomeScreen() {
 
                 {subscriptions.length > 0 && (
                     <View style={[styles.summaryCard, {backgroundColor: d ? '#ffffff' : '#111'}]}>
-                        <Text style={[styles.summaryLabel, {color: d ? '#888' : '#555'}]}>Monthly expenses (estimate)</Text>
-                        <Text style={[styles.summaryAmount, {color: d ? '#111' : '#fff'}]}>{totalMonthly.toFixed(0)} CZK</Text>
-                        <Text style={[styles.summaryCount, {color: d ? '#888' : '#555'}]}>{subscriptions.length} subscriptions</Text>
+                        <Text style={[styles.summaryLabel, {color: d ? '#888' : '#555'}]}>Monthly expenses
+                            (estimate)</Text>
+                        <Text
+                            style={[styles.summaryAmount, {color: d ? '#111' : '#fff'}]}>{totalMonthly.toFixed(0)} CZK</Text>
+                        <Text
+                            style={[styles.summaryCount, {color: d ? '#888' : '#555'}]}>{subscriptions.length} subscriptions</Text>
                     </View>
                 )}
 
@@ -438,16 +441,21 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <Modal visible={modalVisible} animationType="slide" transparent>
-                <View style={styles.modalOverlay}>
-                    {datePickerVisible && (
-                        <View style={styles.datePickerOverlay}>
-                            <DatePickerInline onClose={() => setDatePickerVisible(false)} onSelect={(date) => {
-                                setStartDate(date);
-                                setDatePickerVisible(false);
-                            }} dark={darkMode}/>
-                        </View>
-                    )}
-                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <KeyboardAvoidingView
+                    style={{flex: 1}}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+                    enabled={Platform.OS !== 'web'}
+                >
+                    <View style={styles.modalOverlay}>
+                        {datePickerVisible && (
+                            <View style={styles.datePickerOverlay}>
+                                <DatePickerInline onClose={() => setDatePickerVisible(false)} onSelect={(date) => {
+                                    setStartDate(date);
+                                    setDatePickerVisible(false);
+                                }} dark={darkMode}/>
+                            </View>
+                        )}
                         <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
                             <View style={styles.modalHeader}>
                                 <Text style={[styles.modalTitle, {color: tp}]}>New subscription</Text>
@@ -562,8 +570,8 @@ export default function HomeScreen() {
                                 <View style={{height: 32}}/>
                             </ScrollView>
                         </View>
-                    </KeyboardAvoidingView>
-                </View>
+                    </View>
+                </KeyboardAvoidingView>
             </Modal>
         </View>
     );
