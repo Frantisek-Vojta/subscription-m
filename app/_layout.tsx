@@ -1,6 +1,9 @@
 import {Stack} from 'expo-router';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {router, useSegments} from 'expo-router';
+import {View, Text, StyleSheet} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import NetInfo from '@react-native-community/netinfo';
 import {useAuth} from '../hooks/useAuth';
 import {ThemeProvider} from '../context/ThemeContext';
 import * as Notifications from 'expo-notifications';
@@ -22,6 +25,7 @@ Notifications.setNotificationChannelAsync('default', {
     lightColor: '#6366f1',
     sound: 'default',
 });
+
 async function registerForPushNotifications(uid: string) {
     try {
         const {status: existingStatus} = await Notifications.getPermissionsAsync();
@@ -48,6 +52,26 @@ async function registerForPushNotifications(uid: string) {
     }
 }
 
+function OfflineBanner() {
+    const [isOffline, setIsOffline] = useState(false);
+    const insets = useSafeAreaInsets();
+
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setIsOffline(!state.isConnected);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    if (!isOffline) return null;
+
+    return (
+        <View style={[styles.banner, {paddingTop: insets.top + 8}]}>
+            <Text style={styles.bannerText}>No internet connection</Text>
+        </View>
+    );
+}
+
 export default function RootLayout() {
     const {user, loading} = useAuth();
     const segments = useSegments();
@@ -72,6 +96,7 @@ export default function RootLayout() {
 
     return (
         <ThemeProvider>
+            <OfflineBanner/>
             <Stack>
                 <Stack.Screen name="(auth)" options={{headerShown: false}}/>
                 <Stack.Screen name="(tabs)" options={{headerShown: false}}/>
@@ -80,3 +105,18 @@ export default function RootLayout() {
         </ThemeProvider>
     );
 }
+
+const styles = StyleSheet.create({
+    banner: {
+        backgroundColor: '#ef4444',
+        paddingBottom: 8,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bannerText: {
+        color: '#fff',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+});
