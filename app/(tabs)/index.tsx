@@ -442,9 +442,8 @@ export default function HomeScreen() {
 
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <KeyboardAvoidingView
-                    style={{flex: 1}}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+                    style={{flex: 1, justifyContent: 'flex-end'}}
+                    behavior="padding"
                     enabled={Platform.OS !== 'web'}
                 >
                     <View style={styles.modalOverlay}>
@@ -633,6 +632,7 @@ const styles = StyleSheet.create({
     emptySubtitle: {fontSize: 15, textAlign: 'center'},
     hint: {fontSize: 12, textAlign: 'center', marginTop: 8},
     modalOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'},
+    modalContentKeyboard: {maxHeight: '75%'},
     modalContent: {borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '92%'},
     modalHeader: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20},
     modalTitle: {fontSize: 20, fontWeight: '700'},
@@ -689,11 +689,11 @@ const dpStyles = StyleSheet.create({
     weekRow: {flexDirection: 'row', marginBottom: 8},
     weekDay: {flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '600'},
     grid: {flexDirection: 'row', flexWrap: 'wrap'},
-    cell: {width: `${100 / 7}%`, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 8},
-    cellText: {fontSize: 14},
+    cell: {width: `${100 / 7}%`, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 8},
+    cellText: {fontSize: 14, textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false},
     footer: {flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16},
     cancelBtn: {paddingHorizontal: 16, paddingVertical: 10, marginRight: 8},
     cancelText: {fontSize: 15},
-    confirmBtn: {paddingHorizontal: 20, paddingVertical: 10},
+    confirmBtn: {paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10},
     confirmText: {fontSize: 15, fontWeight: '600'},
 });
