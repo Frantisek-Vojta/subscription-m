@@ -104,7 +104,7 @@ function LineChart({ total, dark }: { total: number; dark: boolean }) {
     const gridColor = dark ? '#2a2a2a' : '#f0f0f0';
     const lineColor = '#6366f1';
 
-    const hardcodedData = [800, 380, 950, 620, 1100, 740, 860, 920, 670, 1050, 780, 990];
+    const hardcodedData = [820, 380, 940, 620, 1200, 740, 800, 920, 670, 1150, 780, 990];
     const monthData = MONTHS_SHORT.map((_, i) => {
         if (i > currentMonth) return null;
         const val = hardcodedData[i];
