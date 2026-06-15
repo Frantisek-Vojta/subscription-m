@@ -119,7 +119,15 @@ function LineChart({ total, dark }: { total: number; dark: boolean }) {
     const maxValRounded = step * 5;
     const yLabels = [0, step, step * 2, step * 3, step * 4, step * 5];
     const colWidth = screenWidth / 13;
+    const colWidthh = screenWidth / 2;
 
+    /*
+    * const colWIdth = creenHeigh /3
+    *
+    *
+    *
+    *
+    * */
     const points = monthData
         .map((val, i) => {
             if (val === null) return null;

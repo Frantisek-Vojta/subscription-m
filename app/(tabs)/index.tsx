@@ -77,7 +77,19 @@ function nextBillingLabel(startDateStr: string, intervalDays: number): string {
 
 async function scheduleNotification(name: string, nextBillingStr: string, amount: number) {
     try {
-        const notifyDate = new Date(new Date().getTime() + 60 * 1000);
+        // 3 dny přededem v 9:00 ráno
+        const parts = nextBillingStr.split('.');
+        const billingDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        const notifyDate = new Date(billingDate);
+        notifyDate.setDate(notifyDate.getDate() - 3);
+        notifyDate.setHours(9, 0, 0, 0);
+
+        if (notifyDate.getTime() <= Date.now()) {
+            console.log('Notification skipped, date already passed:', notifyDate);
+            return;
+        }
+
+        // const notifyDate = new Date(new Date().getTime() + 60 * 1000);
 
         await Notifications.scheduleNotificationAsync({
             content: {
