@@ -98,4 +98,4 @@ npm run lint
 
 web: https://subscription-m.expo.app/
 
-download for android (.apk): https://expo.dev/accounts/frantisek.vojta/projects/subscription-m/builds/81d35ccd-0249-41ce-868a-fa17337e3741
+download for android (.apk): https://expo.dev/artifacts/eas/j_JyptFlcbY4JMVkZsqke7sq1F6eJQSpz8Vzg3ltC1s.aab
